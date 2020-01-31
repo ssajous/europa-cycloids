@@ -9,3 +9,4 @@ services:
       - ./src:/home/jovyan/work
     environment:
       - PYTHONPATH=/home/jovyan/work/
+      - PASSWORD=rhinos
