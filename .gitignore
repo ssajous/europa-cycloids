@@ -1,0 +1,11 @@
+__pycache__/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IPython notebook
+.ipynb_checkpoints
+
+# Misc
+.DS_Store
