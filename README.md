@@ -4,7 +4,7 @@
 * Install Docker
 * Run `docker-compose build`
 * Run `docker-compose up -d`
-* Launch web browser and navigate to `http://localhost:888`
+* Launch web browser and navigate to `http://localhost:8899`
 
 Notebook password is `rhinos`
 

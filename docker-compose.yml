@@ -4,7 +4,7 @@ services:
   notebook:
     build: ./
     ports:
-      - 8888:8888
+      - 8899:8888
     volumes:
       - ./src:/home/jovyan/work
     environment:
