@@ -1,0 +1,38 @@
+---
+    radii:
+        - 1.394e6
+        - 1.546e6
+        - 1.556e6
+        - 1.561e6
+
+    density:
+        - 3824
+        - 1000
+        - 1000
+        - 1000
+
+    rigidity:
+        - 65e9
+        - 0
+        - 3.5e9
+        - 3.5e9
+
+    viscosity:
+        - 0
+        - 0
+        - 1e13
+        - 0
+
+    mass: 1.898e27
+    semiMajorDistance: 6.711e8
+    eccentriciy: 0.01
+
+    obliquity: 0
+    obliquityPhase: 0
+    obliquityPhaseRate: 0
+    spinRate: 0
+    nonSynchronusRotationRate: 0
+    librationAmplitude: 0
+    librationPhase: 0
+    librationFrequency: 0
+    
