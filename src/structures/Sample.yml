@@ -25,7 +25,7 @@
 
     mass: 1.898e27
     semiMajorDistance: 6.711e8
-    eccentriciy: 0.01
+    eccentricity: 0.01
 
     obliquity: 0
     obliquityPhase: 0
@@ -35,4 +35,3 @@
     librationAmplitude: 0
     librationPhase: 0
     librationFrequency: 0
-    
