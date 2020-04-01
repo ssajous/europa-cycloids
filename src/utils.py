@@ -3,12 +3,17 @@ import yaml
 import pathlib
 import os
 
-def import_structure(name):
+def import_structure(name, overrides={}):
     folder = pathlib.Path(__file__).parent.absolute()
     path = os.path.join(folder, 'structures', f'{name}.yml')
     
     with open(path, 'r') as stream:
-        config = yaml.safe_load(stream)
+        try:
+            config = yaml.safe_load(stream)
+        except:
+            config = {}
+
+    config.update(overrides)
 
     radii = list(map(float, config['radii']))
     density = list(map(float, config['density']))
@@ -31,7 +36,7 @@ def import_structure(name):
     librationPhase = float(config['librationPhase']) if config.get('librationPhase') is not None else 0
     librationFrequency = float(config['librationFrequency']) if config.get('librationFrequency') is not None else 0
 
-    return MEW.satellite(
+    sat = MEW.satellite(
         rin = radii,
         pin = density,
         uin = rigidity,
@@ -49,6 +54,7 @@ def import_structure(name):
         libp = librationPhase,
         libn = librationFrequency
     )
+    return sat
 
 def list_structures():
     folder = pathlib.Path(__file__).parent.absolute()
