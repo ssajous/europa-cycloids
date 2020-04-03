@@ -16,8 +16,46 @@ DEG_MULTIPLIER = 180 / np.pi
 
 r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
+get_principal1 = None
+get_principal2 = None
+get_principal_orientation = None
+get_principal_orientation2 = None
 
-def build_stress_field(satellite, is_async = False):
+def get_stress_for_latitude(step, lat):
+    results = []
+
+    lat_radians = lat * RAD_MULTIPLIER #np.radians(lat)
+    step_value = step / TIME_STEPS
+    
+    for lon in range(MIN_LON, MAX_LON + 1, 10):
+        if (lat == 90 or lon == 0):
+            continue
+            
+        lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
+
+        principal1 = get_principal1(step_value, lat_radians, lon_radians)
+        principal2 = get_principal2(step, lat_radians, lon_radians)
+        principal_phi = get_principal_orientation(step, lat_radians, lon_radians)
+        principal_phi2 = get_principal_orientation2(step, lat_radians, lon_radians)        
+
+        max_stress = max(principal1, principal2)
+        max_stress_orientation = principal_phi if max_stress == principal1 else principal_phi2
+
+        results.append({
+                'time_step': step,
+                'latitude': lat,
+                'longitude': lon,
+                'principal1': principal1,
+                'principal2': principal2,
+                'principal_orientation': principal_phi * DEG_MULTIPLIER,
+                'principal_orientation2': principal_phi2 * DEG_MULTIPLIER,
+                'max_stress': max_stress,
+                'max_stress_orientation': max_stress_orientation * DEG_MULTIPLIER
+            })
+
+    return results
+
+def build_stress_field(satellite, is_async = True):
     """ 
     Creates a data frame with the results of stress calculations for a range of 
     latitudes and longitudes across 360 time steps
@@ -34,49 +72,25 @@ def build_stress_field(satellite, is_async = False):
 
     # Create "lamdified" versions of each of the stress equations.  This turns
     # the symbolic python formulas into standar python functions.  Which improves their 
-    # performance by about 2 orders of magnitude.  
+    # performance by about 2 orders of magnitude.  The use of global variables for the 
+    # functions is necessary to allow the multiprocess functionality to work.  Locally
+    # defined functions cannot be pickled.
+    global get_principal1
+    global get_principal2
+    global get_principal_orientation
+    global get_principal_orientation2
     get_principal1 = sym.lambdify([t, φ, θ], satellite.PC1, modules = ["math", {"cot": math.atan}])
     get_principal2 = sym.lambdify([t, φ, θ], satellite.PC2, modules = ["math", {"cot": math.atan}])
     get_principal_orientation = sym.lambdify([t, φ, θ], satellite.PCΨ, modules = ["math", {"cot": math.atan}])
     get_principal_orientation2 = sym.lambdify([t, φ, θ], satellite.PCΨ2, modules = ["math", {"cot": math.atan}])
 
-    def get_stress_for_latitude(step, lat):
-        results = []
-        lat_radians = lat * RAD_MULTIPLIER #np.radians(lat)
-        step_value = step / TIME_STEPS
-        
-        for lon in range(MIN_LON, MAX_LON + 1, 10):
-            if (lat == 90 or lon == 0):
-                continue
-                
-            lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
-
-            principal1 = get_principal1(step_value, lat_radians, lon_radians)
-            principal2 = get_principal2(step, lat_radians, lon_radians)
-            principal_phi = get_principal_orientation(step, lat_radians, lon_radians)
-            principal_phi2 = get_principal_orientation2(step, lat_radians, lon_radians)        
-
-            max_stress = max(principal1, principal2)
-            max_stress_orientation = principal_phi if max_stress == principal1 else principal_phi2
-    
-            results.append({
-                    'time_step': step,
-                    'latitude': lat,
-                    'longitude': lon,
-                    'principal1': principal1,
-                    'principal2': principal2,
-                    'principal_orientation': principal_phi * DEG_MULTIPLIER,
-                    'principal_orientation2': principal_phi2 * DEG_MULTIPLIER,
-                    'max_stress': max_stress,
-                    'max_stress_orientation': max_stress_orientation * DEG_MULTIPLIER
-                })
-            
-        return results
-
     data = []
 
     def callback(items):
         data.extend(items)
+
+    def error_callback(err):
+        print(err)
 
     if is_async:
         pool = multiprocessing.Pool()
@@ -86,7 +100,7 @@ def build_stress_field(satellite, is_async = False):
             if is_async:
                 # pool.apply_async will schedule the processing within separate python processes
                 # which allows the work to be distributed to multiple CPU cores
-                pool.apply_async(get_stress_for_latitude, args = (step, lat, ), callback=callback)
+                pool.apply_async(get_stress_for_latitude, args = (step, lat, ), callback=callback, error_callback=error_callback)
             else:
                 data.extend(get_stress_for_latitude(step, lat))
     
