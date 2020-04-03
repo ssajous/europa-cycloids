@@ -16,6 +16,23 @@ r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
 
 def build_stress_field(satellite, is_async = False):
+    """ 
+    Creates a data frame with the results of stress calculations for a range of 
+    latitudes and longitudes across 360 time steps
+
+    Parameters
+    ----------
+    satelite : MEWtools.satellite
+        The body on which stress values will be calculated
+    is_async: boolean, optional
+        When True (default) the calculation will be spread across multiple
+        processes for peformance.  When False all calculation is done in the 
+        current process, this most likely slower, but better for debugging.
+    """
+
+    # Create "lamdified" versions of each of the stress equations.  This turns
+    # the symbolic python formulas into standar python functions.  Which improves their 
+    # performance by about 2 orders of magnitude.  
     get_principal1 = sym.lambdify([t, φ, θ], satellite.PC1, modules = ["math", {"cot": math.atan}])
     get_principal2 = sym.lambdify([t, φ, θ], satellite.PC2, modules = ["math", {"cot": math.atan}])
     get_principal_orientation = sym.lambdify([t, φ, θ], satellite.PCΨ, modules = ["math", {"cot": math.atan}])
@@ -65,6 +82,8 @@ def build_stress_field(satellite, is_async = False):
     for step in range(TIME_STEPS):
         for lat in range(MIN_LAT, MAX_LAT + 1, LAT_STEP_SIZE):
             if is_async:
+                # pool.apply_async will schedule the processing within separate python processes
+                # which allows the work to be distributed to multiple CPU cores
                 pool.apply_async(get_stress_for_latitude, args = (step, lat, ), callback=callback)
             else:
                 data.extend(get_stress_for_latitude(step, lat))
