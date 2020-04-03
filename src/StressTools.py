@@ -11,6 +11,8 @@ MIN_LON = 0
 MAX_LON = 360
 LAT_STEP_SIZE = 15
 LON_STEP_SIZE = 10
+RAD_MULTIPLIER = np.pi / 180
+DEG_MULTIPLIER = 180 / np.pi
 
 r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
@@ -40,14 +42,14 @@ def build_stress_field(satellite, is_async = False):
 
     def get_stress_for_latitude(step, lat):
         results = []
-        lat_radians = np.radians(lat)
+        lat_radians = lat * RAD_MULTIPLIER #np.radians(lat)
         step_value = step / TIME_STEPS
         
         for lon in range(MIN_LON, MAX_LON + 1, 10):
             if (lat == 90 or lon == 0):
                 continue
                 
-            lon_radians = np.radians(lon)
+            lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
 
             principal1 = get_principal1(step_value, lat_radians, lon_radians)
             principal2 = get_principal2(step, lat_radians, lon_radians)
@@ -63,10 +65,10 @@ def build_stress_field(satellite, is_async = False):
                     'longitude': lon,
                     'principal1': principal1,
                     'principal2': principal2,
-                    'principal_orientation': np.rad2deg(principal_phi),
-                    'principal_orientation2': np.rad2deg(principal_phi2),
+                    'principal_orientation': principal_phi * DEG_MULTIPLIER,
+                    'principal_orientation2': principal_phi2 * DEG_MULTIPLIER,
                     'max_stress': max_stress,
-                    'max_stress_orientation': np.rad2deg(max_stress_orientation)
+                    'max_stress_orientation': max_stress_orientation * DEG_MULTIPLIER
                 })
             
         return results
