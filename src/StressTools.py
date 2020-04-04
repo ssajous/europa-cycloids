@@ -22,10 +22,32 @@ get_principal_orientation = None
 get_principal_orientation2 = None
 
 def get_stress_for_latitude(step, lat):
+    """
+    Do NOT use this function directly! Use build_stress_field instead.
+
+    Generates a data frame with stresses for each longitude within the specified
+    longitude and time step.
+
+    Parameters
+    ----------
+    step: int 
+        The current time step to use for stress generation.  Value should be
+        between 0 and 359 inclusive.
+    lat: float
+        The latitude in degrees to use for stress generation
+
+    Returns
+    -------
+    DataFrame
+        Stress data which includes time step, latitude (degrees), longitude (degrees),
+        principal1 stress, principal2 stress, principal1 orientation (degrees), 
+        principal2 orientation (degrees), max stress value, max stress orientation.
+    """
     results = []
 
     lat_radians = lat * RAD_MULTIPLIER #np.radians(lat)
-    step_value = step / TIME_STEPS
+    # step_value = step / TIME_STEPS
+    step_value = step * step
     
     for lon in range(MIN_LON, MAX_LON + 1, 10):
         if (lat == 90 or lon == 0):
@@ -68,6 +90,13 @@ def build_stress_field(satellite, is_async = True):
         When True (default) the calculation will be spread across multiple
         processes for peformance.  When False all calculation is done in the 
         current process, this most likely slower, but better for debugging.
+
+    Returns
+    -------
+    DataFrame
+        Stress data which includes time step, latitude (degrees), longitude (degrees),
+        principal1 stress, principal2 stress, principal1 orientation (degrees), 
+        principal2 orientation (degrees), max stress value, max stress orientation.
     """
 
     # Create "lamdified" versions of each of the stress equations.  This turns
