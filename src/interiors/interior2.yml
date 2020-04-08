@@ -1,0 +1,38 @@
+period_duration_seconds: 306000.0
+
+viscosity: 1.0e+21
+
+rigidity: 3.487e+9
+
+surface_gravity: 1.313
+
+radius: 1562.0e+3
+
+eccentricity: 0.0094
+
+love_h_elastic: 1.151065
+love_e_elastic: 0.3080142
+
+modal_strengths:
+    - -4.44842e-4
+    - -1.08230E-1
+    - -4.49843E-1
+    - -3.44846
+    - -1.82134E+2
+    - -1.02492E+3
+
+love_h_viscoelastic:
+    - 4.31352E-3
+    - 3.43781E-2
+    - 5.15023E-2
+    - 7.17001E-1
+    - 7.10977E-5
+    - 8.47114E-2
+
+love_l_viscoelastic:
+    - 1.60251E-1
+    - 9.34250E-3
+    - 1.39915E-2
+    - 1.94817E-1
+    - 5.93813E-3
+    - 2.25805E-2
