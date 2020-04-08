@@ -133,7 +133,7 @@ def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NS
     interior = utils.import_interior(interior_name)
 
     #pi = 3.14159265359
-    year2sec = 3600.*24.*365.  # conversion for NSR sj values
+    # year2sec = 3600.*24.*365.  # conversion for NSR sj values
 
     periodInSec = 306000.0  # sec;
     n = 2.*np.pi/periodInSec  # [rad/sec]
@@ -254,11 +254,6 @@ def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NS
         myStressPhPhTot = myStressPhPh
         myStressThPhTot = myStressThPh
 
-    # For writing out only
-    latDeg = 90-np.degrees(colat)
-    lonDeg = 360. - np.degrees(lon)
-    meanMotion = 2.*np.pi*(this_step/steps)
-
     # Converting COMBINED STRESSES to principle stresses.
 
     if (myStressThThTot == myStressPhPhTot):
@@ -268,7 +263,6 @@ def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NS
         zeta = 0.5*np.arctan((2.*myStressThPhTot) /
                              (myStressThThTot-myStressPhPhTot))
 
-    #print(myStressThThTot, myStressPhPhTot, myStressThPhTot, zeta)
     sigTheta = myStressThThTot*(np.square(np.cos(zeta)))+myStressPhPhTot*(np.square(
         np.sin(zeta)))+myStressThPhTot*np.sin(2.*zeta)  # Corresponds to Terry's sigma 1
     sigPhi = myStressThThTot*(np.square(np.sin(zeta)))+myStressPhPhTot*(np.square(
@@ -305,7 +299,5 @@ def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NS
         bigHeading = heading
     else:
         bigHeading = heading2
-
-    #print(stress, bigHeading)
 
     return (stress, bigHeading)
