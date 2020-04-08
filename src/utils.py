@@ -126,7 +126,7 @@ class Interior:
         def invert(value):
             return 1.0 / value
 
-        self.modal_strengths_nsr = map(invert, config['modal_strengths_nsr']) \
+        self.modal_strengths_nsr = list(map(invert, config['modal_strengths_nsr'])) \
             if config.get('modal_strengths_nsr') is not None \
             else []
         

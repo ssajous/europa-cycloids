@@ -14,10 +14,10 @@ love_h_elastic: 1.15106
 love_e_elastic: 0.308014
 
 modal_strengths:
-    - -1.08e-1
+    - -1.081e-1
     - -3.23708e-1
     - -4.49843e-1
-    - -3.44856e-1
+    - -3.44856
     - -1.82043e+5
     - -1.02489e+6
 
@@ -49,7 +49,7 @@ modal_strengths_nsr:
 love_h_viscoelastic_nsr:
     - 0.0382668
     - 0.00204669
-    - 0.000668672
+    - 0.000668372
     - 0.159271
 
 love_l_viscoelastic_nsr:

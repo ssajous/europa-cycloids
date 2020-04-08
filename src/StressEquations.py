@@ -132,18 +132,13 @@ def modethphvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NSRdelta):
     interior = utils.import_interior(interior_name)
 
-    #pi = 3.14159265359
-    # year2sec = 3600.*24.*365.  # conversion for NSR sj values
-
     periodInSec = 306000.0  # sec;
     n = 2.*np.pi/periodInSec  # [rad/sec]
 
     t = (this_step/steps)*periodInSec
 
     _lambda = interior.rigidity / (interior.viscosity * n)
-    # sgrav = 1.313           # m/s^2
-    # radius = 1562.0*1000.   # m               Hermes: 1562.0      Thin shell: 1561.5
-    # eccCurrent = 0.0094    #                  Hermes: 0.0094      Thin shell: 0.01
+    
     if (e_in is None):
         ecc = interior.eccentricity
     else:
