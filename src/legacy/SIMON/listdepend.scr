@@ -1,0 +1,145 @@
+#!/usr/local/bin/perl
+
+# listdep was written for Burkhard Militzer's CUPI code, to generate
+# a Makefile with the dependencies in the correct order.
+
+# Usage: run listdep in the directory for which you want to generate a
+# Makefile.  It assumes all header files are .h files and all program
+# files are .C files.  The syntax is "listdep [output filename]".
+
+# Assumption:  filenames are assumed to contain only a single period, 
+#  separating the base filename from the .C or .h extension.
+
+# Written by Erik Draeger, May 2nd, 2000
+# Modified by Burkhard Militzer
+
+if ($#ARGV < 0) {
+  print "syntax:  listdep [output filename]\n";
+  exit;
+}
+
+opendir THISDIR, '.' or die "can't access current directory:  $!\n";
+@allfiles = readdir THISDIR;
+closedir THISDIR;
+
+
+# get the list of source and object files
+
+$scnt = 0;
+$ocnt = 0;
+print "Sorting out dependencies...\n";
+
+for ($i=0;$i<=$#allfiles;$i++) {
+
+  @temp = split '\.',$allfiles[$i];
+  if ($#temp == 1) {
+    if ($temp[1] eq 'C' || $temp[1] eq 'cc' || $temp[1] eq 'c' || $temp[1] eq 'h') {
+      $files[$scnt] = $allfiles[$i];
+      $scnt++;
+      if ($temp[1] ne 'h') {
+	$ofiles[$ocnt] = $allfiles[$i];
+	$ocnt++;
+      }
+    }
+  }
+}
+
+# grep out dependencies for each .h file
+$cnt = 0;
+FILE: foreach $file (@files[0..$#files]) {  
+
+#  print "LOOK AT $file \n";
+  @dep1 = split 'include',`grep '\#include' $file | grep '\"'`;
+
+#  print ">> @dep1 <<\n";
+
+  if ($#dep1 < 0) { 
+    $numdep[$cnt] = -1;
+  }
+  else {
+
+    $numdep[$cnt] = -1;
+
+    $depcnt=0;
+    for ($i=1; $i<=$#dep1; $i++) {
+      @temp = split '\"',$dep1[$i];
+      $depfile = $temp[1];
+#      print "Depends on $depfile\n";
+      if (-e $depfile) {
+	$dep[$cnt][$depcnt] = $depfile;
+	$numdep[$cnt] = $depcnt;
+	$depcnt++;
+      } else {
+	print "Could not find file $depfile included by $file\n";
+      }
+    }
+ 
+  }
+  $cnt++;
+#  print "--------------------\n";
+}
+
+# write out file info
+$num = $#files + 1;
+$onum = $#ofiles + 1;
+print "processing $num source files (h,c,cc,C) and $onum object files (c,cc,C)...\n";
+
+# open output file
+
+$output = $ARGV[0];
+open OUTPUT, ">$output";
+
+
+# initialize
+$alldone=0;
+for ($i=0; $i<=$#files; $i++) {
+  $done[$i] = 0;
+}
+
+# write out .h part of output file, in the right order
+
+while ($alldone==0) {
+  $didone = 0;
+  LOOP: for ($f=0; $f<=$#files; $f++) {
+# has this file not yet been done?
+    if ($done[$f]==0) {
+      $didone++;
+      for ($d=0; $d<=$numdep[$f]; $d++) {
+        $depfile = $dep[$f][$d];
+#	print "$files[$f] -> $depfile\n";
+
+        HINNER: for ($k=0; $k<=$#files; $k++) {
+          if ($depfile eq $files[$k]) { 
+            $depind = $k; 
+            last HINNER;
+          }
+        }
+#       this file not yet been printed -> cannot print current one either
+        if ($done[$depind]==0) { next LOOP; }
+      }
+      $var = uc($files[$f]);
+      print OUTPUT "$var = $files[$f] ";
+      for ($d=0; $d<=$numdep[$f]; $d++) {
+        $depfile = uc($dep[$f][$d]);
+        print OUTPUT "\$($depfile) ";
+      }
+      print OUTPUT "\n";
+      $done[$f] = 1;
+#      print "DONE $files[$f]\n";
+    }
+  }
+  if ($didone == 0) { $alldone = 1; }
+  print "$didone source files left\n";
+}
+
+print OUTPUT "\n";
+
+for ($f=0; $f<=$#ofiles; $f++) {
+  $var = uc($ofiles[$f]);
+  @temp = split '\.',$ofiles[$f];
+  print OUTPUT "$temp[0].o : \$($var)\n";
+#  print OUTPUT "$ofiles[$f] : \$($var)\n";
+#  print OUTPUT "$temp[0].o : $ofiles[$f]\n";
+}
+
+close OUTPUT;
