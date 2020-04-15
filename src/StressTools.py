@@ -78,7 +78,7 @@ def get_stress_for_latitude(step, time, lat):
 
     return results
 
-def build_stress_field(satellite, orbit_time_seconds, is_async = True):
+def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = True):
     """ 
     Creates a data frame with the results of stress calculations for a range of 
     latitudes and longitudes across 360 time steps
@@ -90,6 +90,9 @@ def build_stress_field(satellite, orbit_time_seconds, is_async = True):
     orbit_time_seconds: int,
         The total number of seconds it takes for the satellite to orbit 
         its primary
+    rotations: float, optional
+        The number of orbital rotations to loop over for time step
+        calculations. Default value is 1
     is_async: boolean, optional
         When True (default) the calculation will be spread across multiple
         processes for peformance.  When False all calculation is done in the 
@@ -129,7 +132,8 @@ def build_stress_field(satellite, orbit_time_seconds, is_async = True):
         pool = multiprocessing.Pool()
 
     # mean_motion = (2 * np.pi) / orbit_time_seconds
-    for step in range(1, TIME_STEPS):
+    total_steps = int(TIME_STEPS * rotations)
+    for step in range(1, total_steps):
         # time = np.radians(step/TIME_STEPS)
         time = (step/TIME_STEPS) * orbit_time_seconds
         for lat in range(MIN_LAT, MAX_LAT + 1, LAT_STEP_SIZE):
