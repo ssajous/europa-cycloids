@@ -21,7 +21,7 @@ get_principal2 = None
 get_principal_orientation = None
 get_principal_orientation2 = None
 
-def get_stress_for_latitude(step, lat):
+def get_stress_for_latitude(step, time, lat):
     """
     Do NOT use this function directly! Use build_stress_field instead.
 
@@ -32,7 +32,9 @@ def get_stress_for_latitude(step, lat):
     ----------
     step: int 
         The current time step to use for stress generation.  Value should be
-        between 0 and 359 inclusive.
+        between 1 and 360 inclusive.
+    time: float
+        The number of seconds to reach the specified step in the orbit
     lat: float
         The latitude in degrees to use for stress generation
 
@@ -45,9 +47,8 @@ def get_stress_for_latitude(step, lat):
     """
     results = []
 
-    lat_radians = lat * RAD_MULTIPLIER #np.radians(lat)
-    # step_value = step / TIME_STEPS
-    step_value = step * step
+    lat_radians = (90-lat) * RAD_MULTIPLIER #np.radians(lat)
+    time_value = time
     
     for lon in range(MIN_LON, MAX_LON + 1, 10):
         if (lat == 90 or lon == 0):
@@ -55,10 +56,10 @@ def get_stress_for_latitude(step, lat):
             
         lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
 
-        principal1 = get_principal1(step_value, lat_radians, lon_radians)
-        principal2 = get_principal2(step, lat_radians, lon_radians)
-        principal_phi = get_principal_orientation(step, lat_radians, lon_radians)
-        principal_phi2 = get_principal_orientation2(step, lat_radians, lon_radians)        
+        principal1 = get_principal1(time_value, lat_radians, lon_radians)
+        principal2 = get_principal2(time_value, lat_radians, lon_radians)
+        principal_phi = get_principal_orientation(time_value, lat_radians, lon_radians)
+        principal_phi2 = get_principal_orientation2(time_value, lat_radians, lon_radians)        
 
         max_stress = max(principal1, principal2)
         max_stress_orientation = principal_phi if max_stress == principal1 else principal_phi2
@@ -77,15 +78,18 @@ def get_stress_for_latitude(step, lat):
 
     return results
 
-def build_stress_field(satellite, is_async = True):
+def build_stress_field(satellite, orbit_time_seconds, is_async = True):
     """ 
     Creates a data frame with the results of stress calculations for a range of 
     latitudes and longitudes across 360 time steps
 
     Parameters
     ----------
-    satelite : MEWtools.satellite
+    satellite : MEWtools.satellite
         The body on which stress values will be calculated
+    orbit_time_seconds: int,
+        The total number of seconds it takes for the satellite to orbit 
+        its primary
     is_async: boolean, optional
         When True (default) the calculation will be spread across multiple
         processes for peformance.  When False all calculation is done in the 
@@ -100,7 +104,7 @@ def build_stress_field(satellite, is_async = True):
     """
 
     # Create "lamdified" versions of each of the stress equations.  This turns
-    # the symbolic python formulas into standar python functions.  Which improves their 
+    # the symbolic python formulas into standard python functions.  Which improves their 
     # performance by about 2 orders of magnitude.  The use of global variables for the 
     # functions is necessary to allow the multiprocess functionality to work.  Locally
     # defined functions cannot be pickled.
@@ -124,14 +128,20 @@ def build_stress_field(satellite, is_async = True):
     if is_async:
         pool = multiprocessing.Pool()
 
-    for step in range(TIME_STEPS):
+    # mean_motion = (2 * np.pi) / orbit_time_seconds
+    for step in range(1, TIME_STEPS):
+        # time = np.radians(step/TIME_STEPS)
+        time = (step/TIME_STEPS) * orbit_time_seconds
         for lat in range(MIN_LAT, MAX_LAT + 1, LAT_STEP_SIZE):
             if is_async:
                 # pool.apply_async will schedule the processing within separate python processes
                 # which allows the work to be distributed to multiple CPU cores
-                pool.apply_async(get_stress_for_latitude, args = (step, lat, ), callback=callback, error_callback=error_callback)
+                pool.apply_async(get_stress_for_latitude, 
+                    args = (step, time, lat, ), 
+                    callback=callback, 
+                    error_callback=error_callback)
             else:
-                data.extend(get_stress_for_latitude(step, lat))
+                data.extend(get_stress_for_latitude(step, time, lat))
     
     if is_async:
         pool.close()
