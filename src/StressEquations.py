@@ -129,8 +129,11 @@ def modethphvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
     return thphvNSR
 
 
-def getStress(interior_name, e_in, colat, lon, steps, this_step, oblq, phase, NSRdelta):
-    interior = utils.import_interior(interior_name)
+def getStress(interior_value, e_in, colat, lon, steps, this_step, oblq, phase, NSRdelta):
+    if isinstance(interior_value, str):
+        interior = utils.import_interior(interior_value)
+    else:
+        interior = interior_value
 
     periodInSec = 306000.0  # sec;
     n = 2.*np.pi/periodInSec  # [rad/sec]
