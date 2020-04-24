@@ -109,3 +109,23 @@ def test_arc(
         print(f'Calculated for phase {phase}')
 
     return pd.DataFrame(results)
+
+def find_heading_error(curve, stresses, positive_only=True):
+    data = stresses.loc[stresses['stress'] > 0] if positive_only else stresses
+    merged = curve.merge(
+        data,
+        how='left',
+        on=['lat', 'lon']
+    )
+    merged['deltaHeading'] = np.abs(merged['heading_x'] - merged['heading_y'])
+    merged['minDeltaHeading'] = merged.groupby('pointNumber')['deltaHeading'].transform('min')
+    merged['maxStress'] = merged.groupby('pointNumber')['stress'].transform('max')
+
+    merged_unique = merged.loc[(merged['deltaHeading'] == merged['minDeltaHeading'])].copy()
+    merged_unique['maxStress'] = merged_unique.groupby('pointNumber')['stress'].transform('max')
+
+    merged_unique = merged_unique.loc[merged_unique['stress'] == merged_unique['maxStress']]
+
+    return merged_unique[['pointNumber', 'lon', 'lat', 'time', 'heading_x',
+                'heading_y', 'stress', 'deltaHeading',
+                'deltaStress']]
