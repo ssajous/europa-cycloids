@@ -5,7 +5,7 @@ import math
 import multiprocessing
 import StressEquations as simon
 import utils
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, Memory
 
 TIME_STEPS = 360
 MIN_LAT = -75
@@ -17,6 +17,9 @@ LON_STEP_SIZE = 10
 RAD_MULTIPLIER = np.pi / 180
 DEG_MULTIPLIER = 180 / np.pi
 CPUS = multiprocessing.cpu_count()
+CACHE_DIR = './cache'
+
+mem = Memory(CACHE_DIR)
 
 r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
@@ -188,15 +191,17 @@ def get_stresses_for_point(interior, lon, lat, phase, tolerance, steps):
         results[0]['deltaStress'] = results[0]['stress'] - results[-1]['stress']
         return results
 
+get_stresses_for_point_cached = mem.cache(get_stresses_for_point)
+
 
 def build_simon_stress_field(interior, pointFrame, phase, tolerance=1, steps=360, is_async=True):
     stresses = []
 
     if is_async:
-        pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point)\
+        pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point_cached)\
             (interior, point.lon, point.lat, phase, tolerance, steps) for point in pointFrame.itertuples())
     else:
-        pointStresses = [get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance, steps) for point in pointFrame.itertuples]
+        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps) for point in pointFrame.itertuples]
 
     for stress in pointStresses:
         stresses.extend(stress)
@@ -204,3 +209,6 @@ def build_simon_stress_field(interior, pointFrame, phase, tolerance=1, steps=360
     df = pd.DataFrame(stresses)
 
     return df
+
+get_simon_stress_field = mem.cache(build_simon_stress_field)
+get_stress_field = mem.cache(build_stress_field)

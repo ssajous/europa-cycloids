@@ -33,7 +33,7 @@ def test_arc(arc, phase_increment, interior, steps=360):
     points = len(arc)
 
     for phase in range(0, 361, phase_increment):
-        field = tools.build_simon_stress_field(interior, arc, phase, steps=steps)
+        field = tools.get_simon_stress_field(interior, arc, phase, steps=steps)
         matches = match_orientations(arc, field)
         loss = calculate_loss(matches, startingPoint, points)
 
