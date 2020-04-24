@@ -138,3 +138,6 @@ class Interior:
             if config.get('love_l_viscoelastic_nsr') is not None \
             else []
                 
+                
+def round_heading(value, base=5):
+    return base * round(value / base)

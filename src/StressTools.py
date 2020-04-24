@@ -3,6 +3,9 @@ import numpy as np
 import sympy as sym
 import math
 import multiprocessing
+import StressEquations as simon
+import utils
+from joblib import Parallel, delayed
 
 TIME_STEPS = 360
 MIN_LAT = -75
@@ -13,6 +16,7 @@ LAT_STEP_SIZE = 15
 LON_STEP_SIZE = 10
 RAD_MULTIPLIER = np.pi / 180
 DEG_MULTIPLIER = 180 / np.pi
+CPUS = multiprocessing.cpu_count()
 
 r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
@@ -153,3 +157,58 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
 
     df = pd.DataFrame(data)
     return df.sort_values(['latitude', 'longitude', 'time_step'])
+
+
+def get_stresses_for_point(interior, lon, lat, phase, tolerance):
+        results = []
+        for step in range(360):
+            current = simon.getStress(
+                interior_value=interior, 
+                e_in=0.01, 
+                colat=np.radians(90-lat), 
+                lon=np.radians(360-lon), 
+                steps=360, 
+                this_step=step,
+                oblq=0.25,
+                phase=np.radians(phase),
+                NSRdelta=0)
+            heading_degrees = np.degrees(current[1])
+            results.append({
+                'lon': lon,
+                'lat': lat,
+                'stress': current[0],
+                'heading': heading_degrees,
+                'headingCategory': utils.round_heading(heading_degrees, tolerance),
+                'time': step
+            })
+        return results
+
+
+def build_simon_stress_field(interior, pointFrame, phase, tolerance=1, is_async=True):
+    stresses = []
+
+    def callback(items):
+        stresses.extend(items)
+
+    def error_callback(err):
+        print(err)
+
+    if is_async:
+        pool = multiprocessing.Pool()
+
+    for point in pointFrame.itertuples():
+        if is_async:
+            # pool.apply_async will schedule the processing within separate python processes
+            # which allows the work to be distributed to multiple CPU cores
+            pool.apply_async(get_stresses_for_point, 
+                args = (interior, point.lon, point.lat, phase, tolerance, ), 
+                callback=callback, 
+                error_callback=error_callback)
+        else:
+            stresses.extend(get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance))
+
+    if is_async:
+        pool.close()
+        pool.join()
+
+    return pd.DataFrame(stresses)

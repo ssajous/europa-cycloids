@@ -141,7 +141,7 @@ def getStress(interior_value, e_in, colat, lon, steps, this_step, oblq, phase, N
     t = (this_step/steps)*periodInSec
 
     _lambda = interior.rigidity / (interior.viscosity * n)
-    
+
     if (e_in is None):
         ecc = interior.eccentricity
     else:
@@ -221,13 +221,13 @@ def getStress(interior_value, e_in, colat, lon, steps, this_step, oblq, phase, N
 
         for index in range(len(interior.modal_strengths_nsr)):
             ththvNSR = modeththvNSR(
-                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon, 
+                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon,
                 interior.hv_NSR[index], interior.lv_NSR[index])
             phphvNSR = modephphvNSR(
-                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon, 
+                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon,
                 interior.hv_NSR[index], interior.lv_NSR[index])
             thphvNSR = modethphvNSR(
-                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon, 
+                constA_NSR, NSRrate, interior.modal_strengths_nsr[index], colat, lon,
                 interior.hv_NSR[index], interior.lv_NSR[index])
 
             ththvNSR_vals.append(ththvNSR)
