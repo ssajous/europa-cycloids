@@ -37,7 +37,7 @@ def get_stress_for_latitude(step, time, lat):
 
     Parameters
     ----------
-    step: int 
+    step: int
         The current time step to use for stress generation.  Value should be
         between 1 and 360 inclusive.
     time: float
@@ -49,24 +49,24 @@ def get_stress_for_latitude(step, time, lat):
     -------
     DataFrame
         Stress data which includes time step, latitude (degrees), longitude (degrees),
-        principal1 stress, principal2 stress, principal1 orientation (degrees), 
+        principal1 stress, principal2 stress, principal1 orientation (degrees),
         principal2 orientation (degrees), max stress value, max stress orientation.
     """
     results = []
 
     lat_radians = (90-lat) * RAD_MULTIPLIER #np.radians(lat)
     time_value = time
-    
+
     for lon in range(MIN_LON, MAX_LON + 1, 10):
         if (lat == 90 or lon == 0):
             continue
-            
+
         lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
 
         principal1 = get_principal1(time_value, lat_radians, lon_radians)
         principal2 = get_principal2(time_value, lat_radians, lon_radians)
         principal_phi = get_principal_orientation(time_value, lat_radians, lon_radians)
-        principal_phi2 = get_principal_orientation2(time_value, lat_radians, lon_radians)        
+        principal_phi2 = get_principal_orientation2(time_value, lat_radians, lon_radians)
 
         max_stress = max(principal1, principal2)
         max_stress_orientation = principal_phi if max_stress == principal1 else principal_phi2
@@ -86,8 +86,8 @@ def get_stress_for_latitude(step, time, lat):
     return results
 
 def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = True):
-    """ 
-    Creates a data frame with the results of stress calculations for a range of 
+    """
+    Creates a data frame with the results of stress calculations for a range of
     latitudes and longitudes across 360 time steps
 
     Parameters
@@ -95,27 +95,27 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     satellite : MEWtools.satellite
         The body on which stress values will be calculated
     orbit_time_seconds: int,
-        The total number of seconds it takes for the satellite to orbit 
+        The total number of seconds it takes for the satellite to orbit
         its primary
     rotations: float, optional
         The number of orbital rotations to loop over for time step
         calculations. Default value is 1
     is_async: boolean, optional
         When True (default) the calculation will be spread across multiple
-        processes for peformance.  When False all calculation is done in the 
+        processes for peformance.  When False all calculation is done in the
         current process, this most likely slower, but better for debugging.
 
     Returns
     -------
     DataFrame
         Stress data which includes time step, latitude (degrees), longitude (degrees),
-        principal1 stress, principal2 stress, principal1 orientation (degrees), 
+        principal1 stress, principal2 stress, principal1 orientation (degrees),
         principal2 orientation (degrees), max stress value, max stress orientation.
     """
 
     # Create "lamdified" versions of each of the stress equations.  This turns
-    # the symbolic python formulas into standard python functions.  Which improves their 
-    # performance by about 2 orders of magnitude.  The use of global variables for the 
+    # the symbolic python formulas into standard python functions.  Which improves their
+    # performance by about 2 orders of magnitude.  The use of global variables for the
     # functions is necessary to allow the multiprocess functionality to work.  Locally
     # defined functions cannot be pickled.
     global get_principal1
@@ -147,13 +147,13 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
             if is_async:
                 # pool.apply_async will schedule the processing within separate python processes
                 # which allows the work to be distributed to multiple CPU cores
-                pool.apply_async(get_stress_for_latitude, 
-                    args = (step, time, lat, ), 
-                    callback=callback, 
+                pool.apply_async(get_stress_for_latitude,
+                    args = (step, time, lat, ),
+                    callback=callback,
                     error_callback=error_callback)
             else:
                 data.extend(get_stress_for_latitude(step, time, lat))
-    
+
     if is_async:
         pool.close()
         pool.join()
@@ -162,20 +162,29 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     return df.sort_values(['latitude', 'longitude', 'time_step'])
 
 
-def get_stresses_for_point(interior, lon, lat, phase, tolerance, steps):
+def get_stresses_for_point(
+    interior,
+    lon,
+    lat,
+    phase,
+    tolerance,
+    steps,
+    eccentricity,
+    obliquity,
+    nsr):
         results = []
         previous = 0
         for step in range(steps):
             current = simon.getStress(
-                interior_value=interior, 
-                e_in=0.01, 
-                colat=np.radians(90-lat), 
-                lon=np.radians(360-lon), 
-                steps=steps, 
+                interior_value=interior,
+                e_in=eccentricity,
+                colat=np.radians(90-lat),
+                lon=np.radians(360-lon),
+                steps=steps,
                 this_step=step,
-                oblq=0.25,
+                oblq=obliquity,
                 phase=np.radians(phase),
-                NSRdelta=0)
+                NSRdelta=nsr)
             heading_degrees = np.degrees(current[1])
             results.append({
                 'lon': lon,
@@ -194,14 +203,23 @@ def get_stresses_for_point(interior, lon, lat, phase, tolerance, steps):
 get_stresses_for_point_cached = mem.cache(get_stresses_for_point)
 
 
-def build_simon_stress_field(interior, pointFrame, phase, tolerance=1, steps=360, is_async=True):
+def build_simon_stress_field(
+    interior,
+    pointFrame,
+    phase,
+    eccentricity,
+    obliquity,
+    nsr,
+    is_async=True,
+    tolerance=1,
+    steps=360):
     stresses = []
 
     if is_async:
         pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point_cached)\
-            (interior, point.lon, point.lat, phase, tolerance, steps) for point in pointFrame.itertuples())
+            (interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples())
     else:
-        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps) for point in pointFrame.itertuples]
+        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples]
 
     for stress in pointStresses:
         stresses.extend(stress)

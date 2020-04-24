@@ -1,7 +1,8 @@
 import numpy as np
 import utils
+from numba import jit
 
-
+@jit(nopython=True)
 def stressththe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     beta20ththe = 0.75*(3.*he - 10.*le)*np.cos(2.*colat) + 0.75*(he - 2.*le)
@@ -13,7 +14,7 @@ def stressththe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     return ththe
 
-
+@jit(nopython=True)
 def stressphphe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     beta20phphe = 0.75*(3.*he - 8.*le)*np.cos(2.*colat) + 0.75*(he - 4.*le)
@@ -25,7 +26,7 @@ def stressphphe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     return phphe
 
-
+@jit(nopython=True)
 def stressthphe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     beta21thphe = 3.*le*np.sin(colat)
@@ -36,7 +37,7 @@ def stressthphe(constA, constB, e, oblq, phase, colat, lon, he, le):
 
     return thphe
 
-
+@jit(nopython=True)
 def modeththv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     beta20ththv = 0.75*(3.*hv - 10.*lv)*np.cos(2.*colat) + 0.75*(hv - 2.*lv)
@@ -48,7 +49,7 @@ def modeththv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     return ththv
 
-
+@jit(nopython=True)
 def modephphv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     beta20phphv = 0.75*(3.*hv - 8.*lv)*np.cos(2.*colat) + 0.75*(hv - 4.*lv)
@@ -60,7 +61,7 @@ def modephphv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     return phphv
 
-
+@jit(nopython=True)
 def modethphv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     beta21thphv = 3.*lv*np.sin(colat)
@@ -71,7 +72,7 @@ def modethphv(n, t, _lambda, sj, e, oblq, phase, colat, lon, hv, lv):
 
     return thphv
 
-
+@jit(nopython=True)
 def stressththeNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
     alpha22ththe = -1.5*(3.*he_NSR - 10.*le_NSR) * \
         np.cos(2.*colat) + 4.5*(he_NSR - 2.*le_NSR)
@@ -79,7 +80,7 @@ def stressththeNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
 
     return ththeNSR
 
-
+@jit(nopython=True)
 def stressphpheNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
 
     alpha22phphe = -1.5*(3.*he_NSR - 8.*le_NSR) * \
@@ -88,7 +89,7 @@ def stressphpheNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
 
     return phpheNSR
 
-
+@jit(nopython=True)
 def stressthpheNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
 
     alpha22thphe = 3.*le_NSR*np.cos(colat)
@@ -96,7 +97,7 @@ def stressthpheNSR(constA_NSR, constB_NSR, colat, lon, he_NSR, le_NSR):
 
     return thpheNSR
 
-
+@jit(nopython=True)
 def modeththvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 
     alpha22ththv = -1.5*(3.*hv_NSR - 10.*lv_NSR) * \
@@ -107,7 +108,7 @@ def modeththvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 
     return ththvNSR
 
-
+@jit(nopython=True)
 def modephphvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 
     alpha22phphv = -1.5*(3.*hv_NSR - 8.*lv_NSR) * \
@@ -118,7 +119,7 @@ def modephphvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 
     return phphvNSR
 
-
+@jit(nopython=True)
 def modethphvNSR(constA_NSR, NSRrate, sj_NSR, colat, lon, hv_NSR, lv_NSR):
 
     alpha22thphv = 3.*lv_NSR*np.cos(colat)
