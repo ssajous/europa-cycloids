@@ -19,7 +19,7 @@ DEG_MULTIPLIER = 180 / np.pi
 CPUS = multiprocessing.cpu_count()
 CACHE_DIR = './cache'
 
-mem = Memory(CACHE_DIR)
+mem = Memory(CACHE_DIR, verbose=0)
 
 r, θ, φ, t = sym.symbols('r θ φ t', real = True)
 
@@ -219,7 +219,7 @@ def build_simon_stress_field(
         pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point_cached)\
             (interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples())
     else:
-        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples]
+        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples()]
 
     for stress in pointStresses:
         stresses.extend(stress)

@@ -129,3 +129,4 @@ def find_heading_error(curve, stresses, positive_only=True):
     return merged_unique[['pointNumber', 'lon', 'lat', 'time', 'heading_x',
                 'heading_y', 'stress', 'deltaHeading',
                 'deltaStress']]
+
