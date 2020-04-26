@@ -200,9 +200,6 @@ def get_stresses_for_point(
         results[0]['deltaStress'] = results[0]['stress'] - results[-1]['stress']
         return results
 
-get_stresses_for_point_cached = mem.cache(get_stresses_for_point)
-
-
 def build_simon_stress_field(
     interior,
     pointFrame,
@@ -216,10 +213,10 @@ def build_simon_stress_field(
     stresses = []
 
     if is_async:
-        pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point_cached)\
+        pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point)\
             (interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples())
     else:
-        pointStresses = [get_stresses_for_point_cached(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples()]
+        pointStresses = [get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples()]
 
     for stress in pointStresses:
         stresses.extend(stress)

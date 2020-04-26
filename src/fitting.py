@@ -22,7 +22,7 @@ def findHeading(points, reverse = False):
     return degrees if degrees > 180 else degrees + 180
 
 
-def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1):
+def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1, output_points=100):
     points = np.array(arc)
     controls = fit.fitCurve(points, max_error)
 
@@ -34,7 +34,7 @@ def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1):
     for control in controls:
         if reverse:
             control.reverse()
-        for time in np.arange(0, 1, 0.01):
+        for time in np.arange(0, 1, 1 / output_points):
             point = bezier.q(control, time)
 
             heading = findHeading(bezier.findCubicRPoints(control, time))
@@ -130,3 +130,122 @@ def find_heading_error(curve, stresses, positive_only=True):
                 'heading_y', 'stress', 'deltaHeading',
                 'deltaStress']]
 
+
+def test_stress_parameters(batch, params, interior):
+    min_vals = np.array([0, 0.01, 0])
+    max_vals = np.array([360, 1, 360])
+
+    if len(params) == 3:
+        variables = params * (max_vals - min_vals) + min_vals # denormalize
+        phase, obliquity, longitude = variables
+    else:
+        variables = params * (max_vals[0:2:] - min_vals[0:2:]) + min_vals[0:2:]
+        phase, obliquity = variables
+        longitude = 0
+
+    test_data = batch.copy()
+    test_data['lon'] = test_data['lon'] + longitude
+
+    field = tools.get_simon_stress_field(
+        interior,
+        test_data,
+        phase=phase,
+        eccentricity=0.01,
+        obliquity=np.radians(obliquity),
+        nsr=0,
+        is_async=True,
+        steps=360)
+    error = find_heading_error(test_data, field)
+
+    result = error['deltaHeading']
+
+    root_mean_squared_error = np.sqrt(np.sum(np.power(result, 2))) / result.shape[0]
+
+     # calculate jacobian & gradient
+    diffs = np.insert(np.diff(result), 0, result.iloc[0], axis=0)
+    jac = np.array([[(-1*error)/param for param in params] for error in diffs])
+    loss_vector = np.array([root_mean_squared_error/error for error in result])
+    gradient = loss_vector @ jac
+
+    return root_mean_squared_error, gradient
+
+
+def match_stresses(batch, params, interior):
+    if len(params) == 3:
+        phase, obliquity, longitude = params
+    else:
+        phase, obliquity = params
+        longitude = 0
+
+    test_data = batch.copy()
+    test_data['lon'] = test_data['lon'] + longitude
+
+    field = tools.get_simon_stress_field(
+        interior,
+        test_data,
+        phase=phase,
+        eccentricity=0.01,
+        obliquity=np.radians(obliquity),
+        nsr=0,
+        is_async=True,
+        steps=360)
+    error = find_heading_error(test_data, field)
+
+    return error
+
+class Adam:
+
+    def __init__(self, alpha=1e-3, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        self.alpha = alpha
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+
+    def minimize(
+        self,
+        objective_function,
+        dataset,
+        starting_params,
+        interior,
+        batch_size=32,
+        threshold=0.01,
+        max_iterations=1000,
+        verbose=False):
+
+        params = starting_params
+
+        best_case = dict(loss=100, parameters=params)
+        worst_case = dict(loss=0, parameters=params)
+        losses = []
+
+        moment = [np.zeros_like(params)]
+        raw_moment = [np.zeros_like(params)]
+
+        loss = 100
+        time = 1
+        while loss > threshold and time < max_iterations:
+            batch = dataset.sample(batch_size)
+
+            loss, gradient = objective_function(batch, params, interior)
+
+            losses.append(loss)
+            if loss < best_case['loss']:
+                best_case['loss'] = loss
+                best_case['parameters'] = params
+
+            moment.append(self.beta1 * moment[time - 1] + (1. - self.beta1) * gradient)
+            raw_moment.append(self.beta2 * raw_moment[time - 1]  + (1. - self.beta2) * gradient**2)
+
+            learning_rate = self.alpha * (np.sqrt(1. - self.beta2**time)/(1. - self.beta1**time))
+            params = params - learning_rate * moment[time]/(np.sqrt(raw_moment[time]) + self.epsilon)
+
+            params[params >=  1] = 1
+            params[params <= 0] = self.epsilon
+
+            time += 1
+
+            if verbose:
+                print(f'Loss Output: {loss}')
+
+
+        return np.array(losses), best_case, dict(loss=loss, parameters=params)
