@@ -222,12 +222,10 @@ class Adam:
                         params[index] = minValue + (params[index] - maxValue)
                     elif params[index] < minValue:
                         params[index] = maxValue - (minValue - params[index])
-            elif maxValue is not None:
-                if params[index] > maxValue:
-                    params[index] = maxValue
-            elif minValue is not None:
-                if params[index] < minValue:
-                    params[index] = minValue
+            elif maxValue is not None and params[index] > maxValue:
+                params[index] = maxValue
+            elif minValue is not None and params[index] < minValue:
+                params[index] = minValue
 
         return params
 
