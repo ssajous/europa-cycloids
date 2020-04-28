@@ -111,7 +111,9 @@ def test_arc(
     return pd.DataFrame(results)
 
 def find_heading_error(curve, stresses, positive_only=True):
+    find_stress_level_of_total(stresses)
     data = stresses.loc[stresses['stress'] > 0] if positive_only else stresses
+    # data = data.loc[data['stress'] > 35]
     merged = curve.merge(
         data,
         how='left',
@@ -128,11 +130,14 @@ def find_heading_error(curve, stresses, positive_only=True):
 
     return merged_unique[['pointNumber', 'lon', 'lat', 'time', 'heading_x',
                 'heading_y', 'stress', 'deltaHeading',
-                'deltaStress']]
+                'deltaStress', 'overallMaxStress', 'stressPctOfMax']]
 
+def find_stress_level_of_total(field):
+    field['overallMaxStress'] = field['stress'].max()
+    field['stressPctOfMax'] = field['stress'] / field['overallMaxStress']
 
-def test_stress_parameters(batch, params, interior):
-    min_vals = np.array([0, 0.01, 0])
+def test_stress_parameters(batch, params, paramDiff, previousError, interior):
+    min_vals = np.array([0, 0.1, 0])
     max_vals = np.array([360, 1, 360])
 
     if len(params) == 3:
@@ -146,7 +151,7 @@ def test_stress_parameters(batch, params, interior):
     test_data = batch.copy()
     test_data['lon'] = test_data['lon'] + longitude
 
-    field = tools.get_simon_stress_field(
+    field = tools.build_simon_stress_field(
         interior,
         test_data,
         phase=phase,
@@ -157,17 +162,19 @@ def test_stress_parameters(batch, params, interior):
         steps=360)
     error = find_heading_error(test_data, field)
 
-    result = error['deltaHeading']
+    result = error['deltaHeading'] * (1 + (1 - error['stressPctOfMax']))
+    errorArray = np.array(result)
 
     root_mean_squared_error = np.sqrt(np.sum(np.power(result, 2))) / result.shape[0]
 
      # calculate jacobian & gradient
-    diffs = np.insert(np.diff(result), 0, result.iloc[0], axis=0)
-    jac = np.array([[(-1*error)/param for param in params] for error in diffs])
+    # diffs = np.insert(np.diff(result), 0, result.iloc[0], axis=0)
+    diffs = errorArray - previousError
+    jac = np.array([[error/param if param != 0 else 0 for param in paramDiff] for error in diffs])
     loss_vector = np.array([root_mean_squared_error/error for error in result])
     gradient = loss_vector @ jac
 
-    return root_mean_squared_error, gradient
+    return root_mean_squared_error, gradient, errorArray
 
 
 def match_stresses(batch, params, interior):
@@ -201,21 +208,46 @@ class Adam:
         self.beta2 = beta2
         self.epsilon = epsilon
 
+    @staticmethod
+    def adjustParameters(params, contraints):
+        for index in range(len(params)):
+            constraint = contraints[index]
+            minValue = constraint.get('minValue')
+            maxValue = constraint.get('maxValue')
+            wrapValue = constraint.get('wrapValue')
+
+            if wrapValue is not None and minValue is not None and maxValue is not None:
+                if wrapValue:
+                    if params[index] > maxValue:
+                        params[index] = minValue + (params[index] - maxValue)
+                    elif params[index] < minValue:
+                        params[index] = maxValue - (minValue - params[index])
+            elif maxValue is not None:
+                if params[index] > maxValue:
+                    params[index] = maxValue
+            elif minValue is not None:
+                if params[index] < minValue:
+                    params[index] = minValue
+
+        return params
+
     def minimize(
         self,
         objective_function,
         dataset,
         starting_params,
         interior,
+        constraints=[{},{},{}],
         batch_size=32,
         threshold=0.01,
-        max_iterations=1000,
+        max_iterations=10000,
         verbose=False):
 
         params = starting_params
+        oldParams = np.zeros_like(params)
+        previousErrorVector = np.zeros(batch_size)
 
         best_case = dict(loss=100, parameters=params)
-        worst_case = dict(loss=0, parameters=params)
         losses = []
 
         moment = [np.zeros_like(params)]
@@ -226,7 +258,8 @@ class Adam:
         while loss > threshold and time < max_iterations:
             batch = dataset.sample(batch_size)
 
-            loss, gradient = objective_function(batch, params, interior)
+            deltaParams = params - oldParams
+            loss, gradient, previousErrorVector = objective_function(batch, params, deltaParams, previousErrorVector, interior)
 
             losses.append(loss)
             if loss < best_case['loss']:
@@ -237,15 +270,73 @@ class Adam:
             raw_moment.append(self.beta2 * raw_moment[time - 1]  + (1. - self.beta2) * gradient**2)
 
             learning_rate = self.alpha * (np.sqrt(1. - self.beta2**time)/(1. - self.beta1**time))
+
+            oldParams = params
             params = params - learning_rate * moment[time]/(np.sqrt(raw_moment[time]) + self.epsilon)
 
-            params[params >=  1] = 1
-            params[params <= 0] = self.epsilon
+            params = self.adjustParameters(params, constraints)
+
+            if verbose:
+                window_size = 25
+                avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
+                print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
 
             time += 1
 
-            if verbose:
-                print(f'Loss Output: {loss}')
+        return np.array(losses), best_case, dict(loss=loss, parameters=params)
 
+class Nesterov:
+    def __init__(self, alpha=1e-5, gamma=0.9):
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def minimize(
+        self,
+        objective_function,
+        dataset,
+        starting_params,
+        interior,
+        batch_size=32,
+        threshold=0.01,
+        max_iterations=10000,
+        verbose=False):
+
+        params = starting_params
+        oldParams = np.zeros_like(params)
+        previousErrorVector = np.zeros(batch_size)
+
+        best_case = dict(loss=100, parameters=params)
+        losses = []
+
+        velocity = np.zeros_like(params)
+
+        loss = 100
+        time = 1
+        while loss > threshold and time < max_iterations:
+            batch = dataset.sample(batch_size)
+
+            deltaParams = params - oldParams
+            loss, gradient, previousErrorVector = objective_function(batch, params, deltaParams, previousErrorVector, interior)
+
+            losses.append(loss)
+            if loss < best_case['loss']:
+                best_case['loss'] = loss
+                best_case['parameters'] = params
+
+            velocity = self.gamma * velocity - self.alpha * gradient
+
+            oldParams = params
+            params = params + velocity
+
+            params[params >=  1] = 1
+            params[params <= 0] = 1e-8
+
+            if verbose:
+                window_size = 25
+                avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
+                print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
+
+            time += 1
 
         return np.array(losses), best_case, dict(loss=loss, parameters=params)
+
