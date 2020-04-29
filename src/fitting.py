@@ -170,7 +170,7 @@ def test_stress_parameters(batch, params, paramDiff, previousError, interior):
      # calculate jacobian & gradient
     # diffs = np.insert(np.diff(result), 0, result.iloc[0], axis=0)
     diffs = errorArray - previousError
-    jac = np.array([[error/param if param != 0 else 0 for param in paramDiff] for error in diffs])
+    jac = np.array([[error/param if param != 0 else 1 for param in paramDiff] for error in diffs])
     loss_vector = np.array([root_mean_squared_error/error for error in result])
     gradient = loss_vector @ jac
 
@@ -215,13 +215,16 @@ class Adam:
             minValue = constraint.get('minValue')
             maxValue = constraint.get('maxValue')
             wrapValue = constraint.get('wrapValue')
+            unstick = constraint.get('unstick')
 
-            if wrapValue is not None and minValue is not None and maxValue is not None:
-                if wrapValue:
-                    if params[index] > maxValue:
-                        params[index] = minValue + (params[index] - maxValue)
-                    elif params[index] < minValue:
-                        params[index] = maxValue - (minValue - params[index])
+            if wrapValue and minValue is not None and maxValue is not None:
+                if params[index] > maxValue:
+                    params[index] = minValue + (params[index] - maxValue)
+                elif params[index] < minValue:
+                    params[index] = maxValue - (minValue - params[index])
+            elif unstick and minValue is not None and maxValue is not None:
+                if params[index] > maxValue or params[index] < minValue:
+                    params[index] = np.random.rand() * (maxValue - minValue) + minValue
             elif maxValue is not None and params[index] > maxValue:
                 params[index] = maxValue
             elif minValue is not None and params[index] < minValue:
@@ -243,21 +246,23 @@ class Adam:
 
         params = starting_params
         oldParams = np.zeros_like(params)
-        previousErrorVector = np.zeros(batch_size)
+        previousErrorVector = np.random.randn(batch_size)
 
         best_case = dict(loss=100, parameters=params)
         losses = []
+        history = []
 
         moment = [np.zeros_like(params)]
         raw_moment = [np.zeros_like(params)]
 
         loss = 100
         time = 1
-        while loss > threshold and time < max_iterations:
+        while loss > threshold and time < max_iterations + 1:
             batch = dataset.sample(batch_size)
 
             deltaParams = params - oldParams
             loss, gradient, previousErrorVector = objective_function(batch, params, deltaParams, previousErrorVector, interior)
+            history.append(np.array([loss, *params]))
 
             losses.append(loss)
             if loss < best_case['loss']:
@@ -278,10 +283,11 @@ class Adam:
                 window_size = 25
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
+                print(f'\tParameters used: {oldParams}')
 
             time += 1
 
-        return np.array(losses), best_case, dict(loss=loss, parameters=params)
+        return np.array(losses), best_case, dict(loss=loss, parameters=params), np.array(history)
 
 class Nesterov:
     def __init__(self, alpha=1e-5, gamma=0.9):

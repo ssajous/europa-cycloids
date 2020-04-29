@@ -13,3 +13,5 @@ pip-delete-this-directory.txt
 cache/
 performance.log
 .vscode/
+
+src/output/
