@@ -43,11 +43,30 @@ def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1, ou
                 'lon': point[0],
                 'lat': point[1],
                 'heading': heading,
-                'headingCategory': utils.round_heading(heading, tolerance)
+                'headingCategory': utils.round_heading(heading, tolerance),
+                'isCusp': False
             })
             pointNumber += 1
 
+    if len(rows) > 0:
+        rows[0]['isCusp'] = True
+        rows[-1]['isCusp'] = True
+
     return pd.DataFrame(rows)
+
+
+def createCycloidBezier(arcs, pointsPerCurve=100, maxError=0.05):
+    all_curves = None
+
+    for arc in arcs:
+        startingPoint = all_curves.shape[0] + 1 if all_curves is not None else 1
+        curve = fit_arc(arc,
+                        startingPoint=startingPoint,
+                        output_points=pointsPerCurve,
+                        max_error=maxError)
+        all_curves = curve if all_curves is None else pd.concat([all_curves, curve], ignore_index=True)
+
+    return all_curves
 
 
 def match_orientations(curve, stresses, positive_only=True):
@@ -176,7 +195,6 @@ def test_stress_parameters(batch, params, paramDiff, previousError, interior):
 
     return root_mean_squared_error, gradient, errorArray
 
-
 def match_stresses(batch, params, interior):
     if len(params) == 3:
         phase, obliquity, longitude = params
@@ -280,6 +298,11 @@ class Adam:
             params = self.adjustParameters(params, constraints)
 
             if verbose:
+                window_size = 25
+                avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
+                print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
+                print(f'\tParameters used: {oldParams}')
+            elif time % 50 == 0:
                 window_size = 25
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
