@@ -1,8 +1,19 @@
 import fitting
 import pandas as pd
+import numpy as np
 import collections
 
 Cycloid = collections.namedtuple('Cycloid', 'points curve arcs')
+
+
+def convertLonRaw(lon):
+    newLon = lon - 180
+    if newLon < 0:
+        newLon = 360 + newLon
+
+    return newLon
+
+convertLon = np.vectorize(convertLonRaw)
 
 
 def loadDelphi():
@@ -134,6 +145,8 @@ def loadOdessa():
     ]
 
     odessaCurve = fitting.createCycloidBezier(odessa_arcs)
+    odessaCurve['lon'] = convertLon(odessaCurve['lon'])
+    odessa['lon'] = convertLon(odessa['lon'])
 
     return odessa, odessaCurve, odessa_arcs
 
@@ -150,6 +163,8 @@ def loadMira():
     ]
 
     miraCurve = fitting.createCycloidBezier(mira_arcs)
+    miraCurve['lon'] = convertLon(miraCurve['lon'])
+    mira['lon'] = convertLon(mira['lon'])
 
     return mira, miraCurve, mira_arcs
 
