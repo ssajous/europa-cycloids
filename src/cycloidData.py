@@ -159,14 +159,14 @@ def loadMira():
     mira = pd.read_csv("./obsData/MiraLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     mira_arcs = [
-        mira[0:8],
-        mira[8:18],
+        mira[0:11],
+        mira[11:18],
         mira[18:21],
-        mira[21:27],
-        mira[27:]
+        mira[21:31],
+        mira[31:]
     ]
 
-    miraCurve = fitting.createCycloidBezier(mira_arcs)
+    miraCurve = fitting.createCycloidBezier(mira_arcs, maxError=0.107)
     miraCurve['lon'] = convertLon(miraCurve['lon'])
     mira['lon'] = convertLon(mira['lon'])
 
