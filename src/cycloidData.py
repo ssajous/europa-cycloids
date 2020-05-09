@@ -84,7 +84,8 @@ def loadSidon():
         sidon[66:]
     ]
 
-    sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
+    # sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
+    sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.065)
 
     return sidon, sidonCurve, sidon_arcs
 
