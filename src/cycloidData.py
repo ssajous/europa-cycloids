@@ -74,13 +74,13 @@ def loadSidon():
 
     sidon_arcs = [
         sidon[0:7],
-        sidon[7:13],
-        sidon[13:19],
-        sidon[19:26],
-        sidon[26:34],
-        sidon[34:44],
-        sidon[44:55],
-        sidon[55:66],
+        sidon[7:19],
+        sidon[19:29],
+        sidon[29:39],
+        sidon[39:47],
+        sidon[47:54],
+        sidon[54:60],
+        sidon[60:66],
         sidon[66:]
     ]
 
@@ -100,7 +100,8 @@ def loadCarly():
         carly[82:]
     ]
 
-    carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
+    # carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
+    carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.035)
 
     return carly, carlyCurve, carly_arcs
 
@@ -184,7 +185,8 @@ def loadCilicia():
         cilicia[65:]
     ]
 
-    ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
+    # ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
+    ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.06)
 
     return cilicia, ciliciaCurve, cilicia_arcs
 
