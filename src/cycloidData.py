@@ -20,14 +20,15 @@ def loadDelphi():
     delphi = pd.read_csv("./obsData/DelphiLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     delphi_arcs = [
-        delphi[0:9],
-        delphi[9:18],
-        delphi[18:27],
-        delphi[27:34],
-        delphi[34:]
+        delphi[0:8],
+        delphi[8:14],
+        delphi[14:24],
+        delphi[24:33],
+        delphi[33:]
     ]
 
-    delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.008)
+    # delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.008)
+    delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.1)
 
     return delphi, delphiCurve, delphi_arcs
 
@@ -53,6 +54,7 @@ def loadTyrrel():
 
 
 def loadAlex():
+    # alex = pd.read_csv("./obsDataCorrected/Alex.csv")
     alex = pd.read_csv("./obsData/AlexLonLatCut.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     alex_arcs = [
@@ -61,7 +63,8 @@ def loadAlex():
         alex[50:]
     ]
 
-    alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.01135)
+    # alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.01135)
+    alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.1)
 
     return alex, alexCurve, alex_arcs
 

@@ -4,6 +4,9 @@ import StressTools as tools
 import curves.fitCurves as fit
 import curves.bezier as bezier
 import utils
+from scipy import stats
+import matplotlib.pyplot as plt
+
 
 def findHeading(points, reverse = False):
     if reverse:
@@ -312,6 +315,52 @@ class Adam:
 
         return np.array(losses), best_case, dict(loss=loss, parameters=params), np.array(history)
 
+
+def optimizationHeatMap(optimize_output, cycloid_name):
+    phase = optimize_output[3].T[1]
+    obliquity = optimize_output[3].T[2]
+    loss = optimize_output[3].T[0]
+
+    phase_min = phase.min()
+    obl_min = obliquity.min()
+    loss_min = loss.min()
+    phase_max = phase.max()
+    obl_max = obliquity.max()
+    loss_max = loss.max()
+
+    # First Obliquity vs loss
+    dataset = np.vstack([obliquity, loss])
+    X, Y = np.mgrid[obl_min:obl_max:100j, loss_min:loss_max:100j]
+    positions = np.vstack([X.ravel(), Y.ravel()])
+    kernel = stats.gaussian_kde(dataset)
+    Z = np.reshape(kernel(positions).T, X.shape)
+
+    plt.figure(figsize=(10, 5))
+    plt.imshow(Z.transpose(),
+            origin="lower",
+            extent=[obl_min, obl_max, loss_min, loss_max],
+            aspect=(obl_max-obl_min)/(loss_max-loss_min))
+    plt.ylim(ymin = loss_min, ymax = min([5, loss_max]))
+    plt.title(f'{cycloid_name} - Obliquity Concentration')
+    plt.xlabel('Obliquity')
+    plt.ylabel('Loss')
+
+    # Then do Phase vs loss
+    dataset = np.vstack([phase, loss])
+    kernel = stats.gaussian_kde(dataset)
+    X, Y = np.mgrid[phase_min:phase_max:100j, loss_min:loss_max:100j]
+    Z = np.reshape(kernel(positions).T, X.shape)
+
+    plt.figure(figsize=(10, 5))
+    plt.imshow(Z.transpose(),
+            origin="lower",
+            extent=[phase_min, phase_max, loss_min, loss_max],
+            aspect=(phase_max-phase_min)/(loss_max-loss_min))
+    plt.ylim(ymin = loss_min, ymax = min([5, loss_max]))
+    plt.title(f'{cycloid_name} - Phase Concentration')
+    plt.xlabel('Phase')
+    plt.ylabel('Loss')
+
 class Nesterov:
     def __init__(self, alpha=1e-5, gamma=0.9):
         self.alpha = alpha
@@ -366,4 +415,5 @@ class Nesterov:
             time += 1
 
         return np.array(losses), best_case, dict(loss=loss, parameters=params)
+
 
