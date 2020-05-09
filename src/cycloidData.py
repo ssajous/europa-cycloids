@@ -142,13 +142,13 @@ def loadOdessa():
     odessa = pd.read_csv("./obsData/OdessaLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     odessa_arcs = [
-        odessa[0:8],
-        odessa[8:15],
-        odessa[15:21],
-        odessa[21:]
+        odessa[0:10],
+        odessa[10:16],
+        odessa[16:23],
+        odessa[23:]
     ]
 
-    odessaCurve = fitting.createCycloidBezier(odessa_arcs)
+    odessaCurve = fitting.createCycloidBezier(odessa_arcs, maxError=0.055)
     odessaCurve['lon'] = convertLon(odessaCurve['lon'])
     odessa['lon'] = convertLon(odessa['lon'])
 
