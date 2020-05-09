@@ -361,6 +361,24 @@ def optimizationHeatMap(optimize_output, cycloid_name):
     plt.xlabel('Phase')
     plt.ylabel('Loss')
 
+def findBestParameters(optimize_output):
+    df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity'])
+    df = df.loc[df['loss'] < 1]
+
+    # Find loss threshold
+    lossHist = np.histogram(df['loss'], bins=100, density=True)
+    index = np.argmax(lossHist[0])
+    threshold = lossHist[1][index + 1]
+
+    # find param values
+    bestFits = df.loc[df['loss'] <= threshold]
+    paramHist = np.histogram2d(bestFits['phase'], bestFits['obliquity'], bins=50, density=True)
+    index = np.unravel_index(np.argmax(paramHist[0]), paramHist[0].shape)
+    phase = np.average(paramHist[1][index[0]:index[0] + 2])
+    obliquity = np.average(paramHist[2][index[1]:index[1] + 2])
+
+    return phase, obliquity
+
 class Nesterov:
     def __init__(self, alpha=1e-5, gamma=0.9):
         self.alpha = alpha
