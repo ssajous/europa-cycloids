@@ -37,18 +37,18 @@ def loadTyrrel():
 
     tyrrel_arcs = [
         tyrrel[0:13],
-        tyrrel[13:25],
-        tyrrel[25:40],
-        tyrrel[40:53],
-        tyrrel[53:59],
-        tyrrel[59:63],
-        tyrrel[63:74],
-        tyrrel[74:84],
-        tyrrel[84:95],
-        tyrrel[95:]
+        tyrrel[13:24],
+        tyrrel[24:34],
+        tyrrel[34:44],
+        tyrrel[44:54],
+        tyrrel[54:67],
+        tyrrel[67:74],
+        tyrrel[74:83],
+        tyrrel[83:94],
+        tyrrel[94:]
     ]
 
-    tyrrelCurve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.01135)
+    tyrrelCurve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.09)
 
     return tyrrel, tyrrelCurve, tyrrel_arcs
 
