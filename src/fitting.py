@@ -155,7 +155,8 @@ def find_heading_error(curve, stresses, positive_only=True):
                 'deltaStress', 'overallMaxStress', 'stressPctOfMax']]
 
 def find_stress_level_of_total(field):
-    field['overallMaxStress'] = field['stress'].max()
+    groups = field.groupby(['lon', 'lat'])['stress']
+    field['overallMaxStress'] = groups.transform('max')
     field['stressPctOfMax'] = field['stress'] / field['overallMaxStress']
 
 def test_stress_parameters(batch, params, paramDiff, previousError, interior):
@@ -305,7 +306,7 @@ class Adam:
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
                 print(f'\tParameters used: {oldParams}')
-            elif time % 50 == 0:
+            elif time % 150 == 0:
                 window_size = 25
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
