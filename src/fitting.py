@@ -159,6 +159,17 @@ def find_stress_level_of_total(field):
     field['overallMaxStress'] = groups.transform('max')
     field['stressPctOfMax'] = field['stress'] / field['overallMaxStress']
 
+def normalize_parameters(params):
+    min_vals = np.array([0, 0.1, 0])
+    max_vals = np.array([360, 1, 360])
+
+    if len(params) == 3:
+        variables = (params - min_vals) / (max_vals - min_vals)
+    else:
+        variables = (params - min_vals[0:2:]) / (max_vals[0:2:] - min_vals[0:2:])
+
+    return variables
+
 def test_stress_parameters(batch, params, paramDiff, previousError, interior):
     min_vals = np.array([0, 0.1, 0])
     max_vals = np.array([360, 1, 360])
@@ -199,7 +210,7 @@ def test_stress_parameters(batch, params, paramDiff, previousError, interior):
 
     return root_mean_squared_error, gradient, errorArray
 
-def match_stresses(batch, params, interior):
+def match_stresses(batch, params, interior, saveStressField=False, path='./output/stressfield.csv.gz'):
     if len(params) == 3:
         phase, obliquity, longitude = params
     else:
@@ -219,6 +230,9 @@ def match_stresses(batch, params, interior):
         is_async=True,
         steps=360)
     error = find_heading_error(test_data, field)
+
+    if saveStressField:
+        field.to_csv(path, index=False, compression='gzip')
 
     return error
 
@@ -362,9 +376,8 @@ def optimizationHeatMap(optimize_output, cycloid_name):
     plt.xlabel('Phase')
     plt.ylabel('Loss')
 
-def findBestParameters(optimize_output):
-    df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity'])
-    df = df.loc[df['loss'] < 1]
+def findBestParametersFromFrame(optimizeHistory):
+    df = optimizeHistory.loc[optimizeHistory['loss'] < 1]
 
     # Find loss threshold
     lossHist = np.histogram(df['loss'], bins=100, density=True)
@@ -379,6 +392,11 @@ def findBestParameters(optimize_output):
     obliquity = np.average(paramHist[2][index[1]:index[1] + 2])
 
     return phase, obliquity
+
+def findBestParameters(optimize_output):
+    df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity'])
+
+    return findBestParametersFromFrame(df)
 
 class Nesterov:
     def __init__(self, alpha=1e-5, gamma=0.9):
