@@ -61,12 +61,13 @@ def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1, ou
 def createCycloidBezier(arcs, pointsPerCurve=100, maxError=0.05):
     all_curves = None
 
-    for arc in arcs:
+    for index, arc in enumerate(arcs):
         startingPoint = all_curves.shape[0] + 1 if all_curves is not None else 1
         curve = fit_arc(arc,
                         startingPoint=startingPoint,
                         output_points=pointsPerCurve,
                         max_error=maxError)
+        curve['arcNumber'] = index + 1
         all_curves = curve if all_curves is None else pd.concat([all_curves, curve], ignore_index=True)
 
     return all_curves

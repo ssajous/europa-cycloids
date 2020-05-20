@@ -16,23 +16,23 @@ def convertLonRaw(lon):
 convertLon = np.vectorize(convertLonRaw)
 
 
-def loadDelphi():
+def loadDelphi(points):
     delphi = pd.read_csv("./obsData/DelphiLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     delphi_arcs = [
         delphi[0:8],
-        delphi[8:14],
-        delphi[14:24],
-        delphi[24:33],
-        delphi[33:]
+        delphi[7:14],
+        delphi[13:24],
+        delphi[23:33],
+        delphi[32:]
     ]
 
     # delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.008)
-    delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.1)
+    delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.1, pointsPerCurve=points)
 
     return delphi, delphiCurve, delphi_arcs
 
-def loadTyrrel():
+def loadTyrrel(points):
     tyrrel = pd.read_csv("./obsData/TyrrelLonLat2.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     tyrrel_arcs = [
@@ -48,12 +48,12 @@ def loadTyrrel():
         tyrrel[94:]
     ]
 
-    tyrrelCurve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.09)
+    tyrrelCurve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.09, pointsPerCurve=points)
 
     return tyrrel, tyrrelCurve, tyrrel_arcs
 
 
-def loadAlex():
+def loadAlex(points):
     # alex = pd.read_csv("./obsDataCorrected/Alex.csv")
     alex = pd.read_csv("./obsData/AlexLonLatCut.txt", header=None, sep=' ', names=['lon', 'lat'])
 
@@ -64,12 +64,12 @@ def loadAlex():
     ]
 
     # alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.01135)
-    alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.1)
+    alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.1, pointsPerCurve=points)
 
     return alex, alexCurve, alex_arcs
 
 
-def loadSidon():
+def loadSidon(points):
     sidon = pd.read_csv("./obsData/SidonLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     sidon_arcs = [
@@ -85,12 +85,12 @@ def loadSidon():
     ]
 
     # sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
-    sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.065)
+    sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.065, pointsPerCurve=points)
 
     return sidon, sidonCurve, sidon_arcs
 
 
-def loadCarly():
+def loadCarly(points):
     carly = pd.read_csv("./obsData/CarlyLonLatCut.txt", header=None, sep='  ', names=['lon', 'lat'], engine='python')
 
     carly_arcs = [
@@ -102,12 +102,12 @@ def loadCarly():
     ]
 
     # carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
-    carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.035)
+    carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.035, pointsPerCurve=points)
 
     return carly, carlyCurve, carly_arcs
 
 
-def loadDirk():
+def loadDirk(points):
     dirk = pd.read_csv("./obsData/DirkLonLat.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     dirk_arcs = [
@@ -119,12 +119,12 @@ def loadDirk():
         dirk[51:]
     ]
 
-    dirkCurve = fitting.createCycloidBezier(dirk_arcs)
+    dirkCurve = fitting.createCycloidBezier(dirk_arcs, pointsPerCurve=points)
 
     return dirk, dirkCurve, dirk_arcs
 
 
-def loadYaphet():
+def loadYaphet(points):
     yaphet = pd.read_csv("./obsData/YaphetLonLat.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     yaphet_arcs = [
@@ -134,12 +134,12 @@ def loadYaphet():
         yaphet[32:]
     ]
 
-    yaphetCurve = fitting.createCycloidBezier(yaphet_arcs, maxError=0.12)
+    yaphetCurve = fitting.createCycloidBezier(yaphet_arcs, maxError=0.12, pointsPerCurve=points)
 
     return yaphet, yaphetCurve, yaphet_arcs
 
 
-def loadOdessa():
+def loadOdessa(points):
     odessa = pd.read_csv("./obsData/OdessaLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     odessa_arcs = [
@@ -149,14 +149,14 @@ def loadOdessa():
         odessa[23:]
     ]
 
-    odessaCurve = fitting.createCycloidBezier(odessa_arcs, maxError=0.055)
+    odessaCurve = fitting.createCycloidBezier(odessa_arcs, maxError=0.055, pointsPerCurve=points)
     odessaCurve['lon'] = convertLon(odessaCurve['lon'])
     odessa['lon'] = convertLon(odessa['lon'])
 
     return odessa, odessaCurve, odessa_arcs
 
 
-def loadMira():
+def loadMira(points):
     mira = pd.read_csv("./obsData/MiraLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     mira_arcs = [
@@ -167,14 +167,14 @@ def loadMira():
         mira[31:]
     ]
 
-    miraCurve = fitting.createCycloidBezier(mira_arcs, maxError=0.107)
+    miraCurve = fitting.createCycloidBezier(mira_arcs, maxError=0.107, pointsPerCurve=points)
     miraCurve['lon'] = convertLon(miraCurve['lon'])
     mira['lon'] = convertLon(mira['lon'])
 
     return mira, miraCurve, mira_arcs
 
 
-def loadCilicia():
+def loadCilicia(points):
     cilicia = pd.read_csv("./obsData/ciliciaLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     cilicia_arcs = [
@@ -187,22 +187,22 @@ def loadCilicia():
     ]
 
     # ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
-    ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.06)
+    ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.06, pointsPerCurve=points)
 
     return cilicia, ciliciaCurve, cilicia_arcs
 
-def loadAllCycloids():
+def loadAllCycloids(pointsPerCurve=100):
     cycloids = {
-        'alex': Cycloid(*loadAlex()),
-        'carly': Cycloid(*loadCarly()),
-        'cilicia': Cycloid(*loadCilicia()),
-        'delphi': Cycloid(*loadDelphi()),
-        'dirk': Cycloid(*loadDirk()),
-        'mira': Cycloid(*loadMira()),
-        'odessa': Cycloid(*loadOdessa()),
-        'sidon': Cycloid(*loadSidon()),
-        'tyrrel': Cycloid(*loadTyrrel()),
-        'yaphet': Cycloid(*loadYaphet())
+        'alex': Cycloid(*loadAlex(pointsPerCurve)),
+        'carly': Cycloid(*loadCarly(pointsPerCurve)),
+        'cilicia': Cycloid(*loadCilicia(pointsPerCurve)),
+        'delphi': Cycloid(*loadDelphi(pointsPerCurve)),
+        'dirk': Cycloid(*loadDirk(pointsPerCurve)),
+        'mira': Cycloid(*loadMira(pointsPerCurve)),
+        'odessa': Cycloid(*loadOdessa(pointsPerCurve)),
+        'sidon': Cycloid(*loadSidon(pointsPerCurve)),
+        'tyrrel': Cycloid(*loadTyrrel(pointsPerCurve)),
+        'yaphet': Cycloid(*loadYaphet(pointsPerCurve))
     }
 
     return cycloids
