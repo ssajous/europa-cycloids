@@ -238,6 +238,13 @@ def calcKStress(stresses, lengths):
     return (1.12 * stresses * 1000 * \
         np.sqrt(np.pi * lengths * 1000)) / 1000
 
+def calcChangeRate(x, y):
+    dx = np.diff(x)
+    dy = np.diff(y)
+    changes = np.insert(np.abs(dy/dx), 0, 0)
+
+    return changes
+
 def addMetrics(stress, interior):
     radiusKm = interior.radius / 1000
     stress['segLengthKm'] = getArcDistance(stress['lon'], stress['lat'], radiusKm)
@@ -251,6 +258,8 @@ def addMetrics(stress, interior):
 
     stress['KStress'] = calcKStress(stress['stress'], stress['cumulativeArcLength'])
     stress['KStressReverse'] = calcKStress(stress['stress'], stress['cumulativeArcLengthReverse'])
+    stress['headingChangeRate'] = calcChangeRate(stress['lon'], stress['heading_x'])
+    stress['headingAcceleration'] = calcChangeRate(stress['lon'], stress['headingChangeRate'])
 
     return stress
 
