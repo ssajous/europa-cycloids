@@ -2,6 +2,10 @@ import fitting
 import pandas as pd
 import numpy as np
 import collections
+from joblib import Memory
+
+CACHE_DIR = './cache'
+mem = Memory(CACHE_DIR, verbose=0)
 
 Cycloid = collections.namedtuple('Cycloid', 'points curve arcs')
 
@@ -37,15 +41,15 @@ def loadTyrrel(points):
 
     tyrrel_arcs = [
         tyrrel[0:13],
-        tyrrel[13:24],
-        tyrrel[24:34],
-        tyrrel[34:44],
-        tyrrel[44:54],
-        tyrrel[54:67],
-        tyrrel[67:74],
-        tyrrel[74:83],
-        tyrrel[83:94],
-        tyrrel[94:]
+        tyrrel[12:24],
+        tyrrel[23:34],
+        tyrrel[33:44],
+        tyrrel[43:54],
+        tyrrel[53:67],
+        tyrrel[66:74],
+        tyrrel[73:83],
+        tyrrel[82:94],
+        tyrrel[93:]
     ]
 
     tyrrelCurve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.09, pointsPerCurve=points)
@@ -59,8 +63,8 @@ def loadAlex(points):
 
     alex_arcs = [
         alex[0:26],
-        alex[26:50],
-        alex[50:]
+        alex[25:50],
+        alex[49:]
     ]
 
     # alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.01135)
@@ -74,14 +78,14 @@ def loadSidon(points):
 
     sidon_arcs = [
         sidon[0:7],
-        sidon[7:19],
-        sidon[19:29],
-        sidon[29:39],
-        sidon[39:47],
-        sidon[47:54],
-        sidon[54:60],
-        sidon[60:66],
-        sidon[66:]
+        sidon[6:19],
+        sidon[18:29],
+        sidon[28:39],
+        sidon[38:47],
+        sidon[46:54],
+        sidon[53:60],
+        sidon[59:66],
+        sidon[65:]
     ]
 
     # sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
@@ -95,10 +99,10 @@ def loadCarly(points):
 
     carly_arcs = [
         carly[0:23],
-        carly[23:38],
-        carly[38:55],
-        carly[55:82],
-        carly[82:]
+        carly[22:38],
+        carly[37:55],
+        carly[54:82],
+        carly[81:]
     ]
 
     # carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
@@ -112,11 +116,11 @@ def loadDirk(points):
 
     dirk_arcs = [
         dirk[0:18],
-        dirk[18:28],
-        dirk[28:34],
-        dirk[34:41],
-        dirk[41:51],
-        dirk[51:]
+        dirk[17:28],
+        dirk[27:34],
+        dirk[33:41],
+        dirk[40:51],
+        dirk[50:]
     ]
 
     dirkCurve = fitting.createCycloidBezier(dirk_arcs, pointsPerCurve=points)
@@ -129,9 +133,9 @@ def loadYaphet(points):
 
     yaphet_arcs = [
         yaphet[0:12],
-        yaphet[12:23],
-        yaphet[23:32],
-        yaphet[32:]
+        yaphet[11:23],
+        yaphet[22:32],
+        yaphet[31:]
     ]
 
     yaphetCurve = fitting.createCycloidBezier(yaphet_arcs, maxError=0.12, pointsPerCurve=points)
@@ -144,9 +148,9 @@ def loadOdessa(points):
 
     odessa_arcs = [
         odessa[0:10],
-        odessa[10:16],
-        odessa[16:23],
-        odessa[23:]
+        odessa[9:16],
+        odessa[15:23],
+        odessa[22:]
     ]
 
     odessaCurve = fitting.createCycloidBezier(odessa_arcs, maxError=0.055, pointsPerCurve=points)
@@ -161,10 +165,10 @@ def loadMira(points):
 
     mira_arcs = [
         mira[0:11],
-        mira[11:18],
-        mira[18:21],
-        mira[21:31],
-        mira[31:]
+        mira[10:18],
+        mira[17:21],
+        mira[20:31],
+        mira[30:]
     ]
 
     miraCurve = fitting.createCycloidBezier(mira_arcs, maxError=0.107, pointsPerCurve=points)
@@ -179,11 +183,11 @@ def loadCilicia(points):
 
     cilicia_arcs = [
         cilicia[0:15],
-        cilicia[15:29],
-        cilicia[29:43],
-        cilicia[43:55],
-        cilicia[55:65],
-        cilicia[65:]
+        cilicia[14:29],
+        cilicia[28:43],
+        cilicia[42:55],
+        cilicia[54:65],
+        cilicia[64:]
     ]
 
     # ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
@@ -191,7 +195,7 @@ def loadCilicia(points):
 
     return cilicia, ciliciaCurve, cilicia_arcs
 
-def loadAllCycloids(pointsPerCurve=100):
+def loadAllCycloidsRaw(pointsPerCurve=100):
     cycloids = {
         'alex': Cycloid(*loadAlex(pointsPerCurve)),
         'carly': Cycloid(*loadCarly(pointsPerCurve)),
@@ -207,4 +211,6 @@ def loadAllCycloids(pointsPerCurve=100):
 
     return cycloids
 
+
+loadAllCycloids = mem.cache(loadAllCycloidsRaw)
 

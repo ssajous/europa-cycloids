@@ -152,7 +152,7 @@ def find_heading_error(curve, stresses, positive_only=True):
     merged_unique = merged_unique.loc[merged_unique['stress'] == merged_unique['maxStress']]
 
     return merged_unique[['pointNumber', 'lon', 'lat', 'time', 'heading_x',
-                'heading_y', 'stress', 'deltaHeading',
+                'heading_y', 'stress', 'deltaHeading', 'isCusp', 'arcNumber',
                 'deltaStress', 'overallMaxStress', 'stressPctOfMax']]
 
 def find_stress_level_of_total(field):
@@ -211,6 +211,49 @@ def test_stress_parameters(batch, params, paramDiff, previousError, interior):
 
     return root_mean_squared_error, gradient, errorArray
 
+def getArcDistance(lonSeries, latSeries, radius, reverse=False):
+    if reverse:
+        lons = np.radians(lonSeries[::-1])
+        lats = np.radians(latSeries[::-1])
+    else:
+        lons = np.radians(lonSeries)
+        lats = np.radians(latSeries)
+    lonsPrev = np.roll(lons, 1)
+    lonsPrev[0] = lonsPrev[1]
+
+    latsPrev = np.roll(lats, 1)
+    latsPrev[0] = latsPrev[1]
+
+    c1 = (np.sin((lats - latsPrev) / 2)) ** 2
+    c2 = (np.sin((lons - lonsPrev) / 2)) ** 2
+
+    distance = 2 * radius * np.arcsin(np.sqrt(c1 + np.cos(lats) * np.cos(latsPrev) * c2))
+
+    if reverse:
+        return distance[::-1]
+    else:
+        return distance
+
+def calcKStress(stresses, lengths):
+    return (1.12 * stresses * 1000 * \
+        np.sqrt(np.pi * lengths * 1000)) / 1000
+
+def addMetrics(stress, interior):
+    radiusKm = interior.radius / 1000
+    stress['segLengthKm'] = getArcDistance(stress['lon'], stress['lat'], radiusKm)
+    stress['segLengthKmReverse'] = getArcDistance(stress['lon'], stress['lat'], radiusKm, reverse=True)
+
+    stress['cumulativeCycloidLength'] = np.cumsum(stress['segLengthKm'])
+    stress['cumulativeCycloidLengthReverse'] = (np.cumsum(stress[::-1]['segLengthKmReverse']))[::-1]
+
+    stress['cumulativeArcLength'] = stress.groupby('arcNumber')['segLengthKm'].cumsum()
+    stress['cumulativeArcLengthReverse'] = stress[::-1].groupby('arcNumber')['segLengthKmReverse'].cumsum()[::-1]
+
+    stress['KStress'] = calcKStress(stress['stress'], stress['cumulativeArcLength'])
+    stress['KStressReverse'] = calcKStress(stress['stress'], stress['cumulativeArcLengthReverse'])
+
+    return stress
+
 def match_stresses(batch, params, interior, saveStressField=False, path='./output/stressfield.csv.gz'):
     if len(params) == 3:
         phase, obliquity, longitude = params
@@ -231,6 +274,7 @@ def match_stresses(batch, params, interior, saveStressField=False, path='./outpu
         is_async=True,
         steps=360)
     error = find_heading_error(test_data, field)
+    error = addMetrics(error, interior)
 
     if saveStressField:
         field.to_csv(path, index=False, compression='gzip')
