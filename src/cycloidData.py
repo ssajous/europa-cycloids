@@ -25,8 +25,8 @@ def loadDelphi(points):
 
     delphi_arcs = [
         delphi[0:8],
-        delphi[7:14],
-        delphi[13:24],
+        delphi[7:15],
+        delphi[14:24],
         delphi[23:33],
         delphi[32:]
     ]
