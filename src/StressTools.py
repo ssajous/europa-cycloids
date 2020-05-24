@@ -3,6 +3,7 @@ import numpy as np
 import sympy as sym
 import math
 import multiprocessing
+from sympy.printing.theanocode import theano_function
 import StressEquations as simon
 import utils
 from joblib import Parallel, delayed, Memory
