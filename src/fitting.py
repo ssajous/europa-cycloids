@@ -135,6 +135,7 @@ def test_arc(
 
 def find_heading_error(curve, stresses, positive_only=True):
     find_stress_level_of_total(stresses)
+
     data = stresses.loc[stresses['stress'] > 0] if positive_only else stresses
     # data = data.loc[data['stress'] > 35]
     merged = curve.merge(
@@ -171,7 +172,64 @@ def normalize_parameters(params):
 
     return variables
 
-def test_stress_parameters(batch, params, paramDiff, previousError, interior):
+def calc_non_monotonic_error_rate(series):
+    if series.shape[0] == 0:
+        return
+
+    forwardError = 0
+    reverseError = 0
+    prevValue = None
+
+    for row in series:
+        if prevValue is None:
+            pass
+        elif row > prevValue:
+            reverseError += 1
+        elif row < prevValue:
+            forwardError += 1
+        else: # equal values
+            pass
+
+        prevValue = row
+
+    error = min([forwardError, reverseError])
+    errorRate = error / series.shape[0]
+
+    return errorRate
+
+def get_time_error_coefficient(data):
+    timedf = data.copy().sort_values('pointNumber')
+
+    mask = timedf.time < 180
+    timedf.loc[mask, 'time'] = timedf.loc[mask, 'time'] + 360
+
+    error_rate = calc_non_monotonic_error_rate(timedf.time)
+    return 1 + error_rate
+
+def get_stress_error_coefficient(data):
+    cusps = data.copy()
+
+    # forward
+    starts = cusps.sort_values('pointNumber', ascending=True).drop_duplicates(['arcNumber'])
+    forward_error_rate = calc_non_monotonic_error_rate(starts.stress)
+
+    # reverse
+    starts = cusps.sort_values('pointNumber', ascending=False).drop_duplicates(['arcNumber'])
+    reverse_error_rate = calc_non_monotonic_error_rate(starts.stress)
+
+    return 1 + min([forward_error_rate, reverse_error_rate])
+
+def calc_monotonic_errors(data, dataset):
+    error = get_stress_error_coefficient(dataset)
+    data['stressError'] = error
+
+    error = data.groupby('arcNumber').apply(get_time_error_coefficient)
+    data['timeError'] = data['arcNumber'].map(error)
+
+    return data
+
+
+def test_stress_parameters(batch, dataset, params, paramDiff, previousError, interior):
     min_vals = np.array([0, 0.1, 0])
     max_vals = np.array([360, 1, 360])
 
@@ -195,9 +253,23 @@ def test_stress_parameters(batch, params, paramDiff, previousError, interior):
         nsr=0,
         is_async=True,
         steps=360)
-    error = find_heading_error(test_data, field)
 
-    result = error['deltaHeading'] * (1 + (1 - error['stressPctOfMax']))
+    cusps = dataset.loc[dataset['isCusp']]
+    cuspField = tools.build_simon_stress_field(
+        interior,
+        cusps,
+        phase=phase,
+        eccentricity=0.01,
+        obliquity=np.radians(obliquity),
+        nsr=0,
+        is_async=True,
+        steps=360)
+
+    cuspError = find_heading_error(cusps.copy(), cuspField, positive_only=False)
+    error = find_heading_error(test_data, field)
+    error = calc_monotonic_errors(error, cuspError)
+
+    result = error['deltaHeading'] * (1 + (1 - error['stressPctOfMax'])) * error['stressError'] * error['timeError']
     errorArray = np.array(result)
 
     root_mean_squared_error = np.sqrt(np.sum(np.power(result, 2))) / result.shape[0]
@@ -332,7 +404,8 @@ class Adam:
         batch_size=32,
         threshold=0.01,
         max_iterations=10000,
-        verbose=False):
+        verbose=False,
+        infoFrequency=150):
 
         params = starting_params
         oldParams = np.zeros_like(params)
@@ -351,7 +424,7 @@ class Adam:
             batch = dataset.sample(batch_size)
 
             deltaParams = params - oldParams
-            loss, gradient, previousErrorVector = objective_function(batch, params, deltaParams, previousErrorVector, interior)
+            loss, gradient, previousErrorVector = objective_function(batch, dataset, params, deltaParams, previousErrorVector, interior)
             history.append(np.array([loss, *params]))
 
             losses.append(loss)
@@ -374,7 +447,7 @@ class Adam:
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
                 print(f'\tParameters used: {oldParams}')
-            elif time % 150 == 0:
+            elif time % infoFrequency == 0:
                 window_size = 25
                 avg_loss = np.average(losses) if len(losses) < window_size else np.average(losses[-1*window_size:])
                 print(f'Iteration {time}/{max_iterations} -- Loss Output: {loss} -- Moving Avg Loss: {avg_loss}')
