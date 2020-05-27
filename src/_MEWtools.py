@@ -222,9 +222,6 @@ def lovefunc(L_, rin_, pin_, uin_, nin_, w_):                                   
 #    print "y functions"
 
 
-
-    breakpoint()
-
     return lovenums
 
 
@@ -416,9 +413,9 @@ class satellite:                                                                
             h = self.lovelist[i][0]
             l = self.lovelist[i][1]
 
-            self.tt += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) * ((3.0*h -  6.0*l)*POT + l*sym.diff(POT,θ,θ)))
-            self.pp += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) * ((3.0*h - 12.0*l)*POT - l*sym.diff(POT,θ,θ)))
-            self.tp += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) *l * sym.csc(θ)*(sym.diff(POT,θ,φ) - sym.atan(θ)*sym.diff(POT,φ)))
+            self.tt += ((2.0*self.uR)/(self.R*self.g)) * ((3.0*h -  6.0*l)*POT + l*sym.diff(POT,θ,θ))
+            self.pp += ((2.0*self.uR)/(self.R*self.g)) * ((3.0*h - 12.0*l)*POT - l*sym.diff(POT,θ,θ))
+            self.tp += ((2.0*self.uR)/(self.R*self.g)) *l * sym.csc(θ)*(sym.diff(POT,θ,φ) - sym.atan(θ)*sym.diff(POT,φ))
 
         self.ttR = sym.re(self.tt)
         self.ppR = sym.re(self.pp)
