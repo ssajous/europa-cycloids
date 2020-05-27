@@ -7,8 +7,64 @@ import math
 
 r, θ, φ, t = sym.symbols(  'r θ φ t'    ,   real=True  )
 
+G = 6.67e-11
+
+# Fundamental Matrix for Elastic Solutions
+def GetEmatFunction():
+    L_, r_, g_, rho_, mu_ = sym.symbols('L_ r_ g_ rho_ mu_')
+    matrix = sym.Matrix([
+                        [                                             r_**(1+L_) ,                                r_**(-1+L_) , 0                      ,                                               r_**(-L_)   ,                                r_**(-2-L_) , 0                  ],
+                        [ ((3+L_)/(L_*(1+L_)))                      * r_**(1+L_) , (1/L_)                       * r_**(-1+L_) , 0                      , -((-2+L_)/(L_*(1+L_)))                      * r_**(-L_)   , -(1/(1+L_))                  * r_**(-2-L_) , 0                  ],
+                        [ (2*mu_*((-3+L_*(-1+L_))/L_) + r_*rho_*g_) * r_**(L_)   , (2*mu_*(-1+L_) + r_*rho_*g_) * r_**(-2+L_) , rho_     * r_**(L_)    , (2*mu_*((1-L_*(3+L_))/(1+L_)) + r_*rho_*g_) * r_**(-1-L_) , (2*mu_*(-2-L_) + r_*rho_*g_) * r_**(-3-L_) , rho_ * r_**(-1-L_) ],
+                        [ 2*mu_*((2+L_)/(1+L_))                     * r_**(L_)   , 2*mu_*((-1+L_)/(L_))         * r_**(-2+L_) , 0                      , 2*mu_*((-1+L_)/(L_))                        * r_**(-1-L_) , 2*mu_*((2+L_)/(1+L_))        * r_**(-3-L_) , 0                  ],
+                        [ 0                                                      , 0                                          ,            r_**(L_)    , 0                                                         , 0                                          ,        r_**(-1-L_) ],
+                        [ 4*np.pi*G*rho_                           * r_**(1+L_) , 4*np.pi*G*rho_              * r_**(-1+L_) , (1+2*L_) * r_**(-1+L_) , 4*np.pi*G*rho_                             * r_**(-L_)   , 4*np.pi*G*rho_              * r_**(-2-L_) , 0                  ]
+                        ])
+    return sym.lambdify([L_, r_, g_, rho_, mu_], matrix)
+
+Emat = GetEmatFunction()
 
 
+# Fundamental Matrix for Elastic Solutions Invserse
+def GetEmatINVFunction():
+    L_, r_, g_, rho_, mu_ = sym.symbols('L_ r_ g_ rho_ mu_')
+    matrix = sym.Matrix([
+                        [ -(((2*mu_*(2+L_) - r_*rho_*g_)*L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_))))         * r_**(-1-L_) , ((L_**2 *(1+L_)*(2+L_)) / (3+4*L_*(2+L_)))  * r_**(-1-L_) , -((L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(-L_)  , ((L_**2 *(1+L_))/(2*mu_*(3+4*L_*(2+L_))))   * r_**(-L_)  , ((L_*(1+L_)*rho_)/(2*mu_*(3+4*L_*(2+L_))))  * r_**(-L_)  , 0                          ],
+                        [  ((L_*(2*mu_*(L_*(3+L_)-1)-(1+L_)*r_*rho_*g_))/(2*mu_*(-1+4*L_**2)))       * r_**(1-L_)  , -((L_*(-1+L_)*(1+L_)**2)/(-1+4*L_**2))       * r_**(1-L_)  ,  ((L_*(1+L_))/(2*mu_*(-1+4*L_**2)))    * r_**(2-L_) , -(((-2+L_)*L_*(1+L_))/(2*mu_*(-1+4*L_**2))) * r_**(2-L_) , -((L_*(1+L_)*rho_)/(2*mu_*(-1+4*L_**2)))    * r_**(2-L_) , 0                          ],
+                        [ -((4*np.pi*G*rho_)/(1+2*L_))                                              * r_**(1-L_)  , 0                                                         , 0                                                   , 0                                                        , 0                                                        , (1/(1+2*L_)) * r_**(1-L_)  ],
+                        [  ((L_*(1+L_)*(2*mu_*(-1+L_) + r_*rho_*g_))/(2*mu_*(-1+4*L_**2)))           * r_**(L_)    , ((L_*(-1+L_)*(1+L_)**2)/(-1+4*L_**2))        * r_**(L_)    , -((L_*(1+L_))/(2*mu_*(-1+4*L_**2)))    * r_**(1+L_) , -((L_*(1+L_)**2)/(2*mu_*(-1+4*L_**2)))      * r_**(1+L_) , ((L_*(1+L_)*rho_)/(2*mu_*(-1+4*L_**2)))     * r_**(1+L_) , 0                          ],
+                        [ -(((1+L_)*(2*mu_*(-3+L_*(-1+L_))+ L_*r_*rho_*g_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(2+L_)  , -((L_**2 *(1+L_)*(2+L_))/((3+4*L_*(2+L_)))) * r_**(2+L_)  , ((L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_))))  * r_**(3+L_) , ((L_*(1+L_)*(3+L_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(3+L_) , -((L_*(1+L_)*rho_)/(2*mu_*(3+4*L_*(2+L_)))) * r_**(3+L_) , 0                          ],
+                        [  ((4*np.pi*G*rho_)/(1+2*L_))                                              * r_**(2+L_)  , 0                                                         , 0                                                   , 0                                                        ,                                               r_**(1+L_) , -(1/(1+2*L_)) * r_**(2+L_) ]
+                        ])
+    return sym.lambdify([L_, r_, g_, rho_, mu_], matrix)
+
+EmatINV = GetEmatINVFunction()
+
+# Fundamental Matrix for Fluid Solutions
+def GetFmatFunction():
+    L_, r_, g_, rho_ = sym.symbols('L_ r_ g_ rho_')
+    matrix = sym.Matrix([
+                        [ -(1/g_)                                              * r_**L_      , -(1/g_)                                               * r_**(-1-L_) ],
+                        [ ((4*np.pi*G*rho_*r_ - (4+L_)*g_)/(L_*(1+L_)*g_**2)) * r_**L_      , ((4*np.pi*G*rho_*r_ + (-3+L_)*g_)/(L_*(1+L_)*g_**2)) * r_**(-1-L_) ],
+                        [ 0                                                                  , 0                                                                   ],
+                        [ 0                                                                  , 0                                                                   ],
+                        [                                                        r_**L_      ,                                                         r_**(-1-L_) ],
+                        [ ((-4*np.pi*G*rho_*r_ + (1+2*L_)*g_)/(g_))           * r_**(-1+L_) , -((4*np.pi*G*rho_)/(g_))                             * r_**(-1-L_) ]
+                        ])
+    return sym.lambdify([L_, r_, g_, rho_], matrix)
+
+Fmat = GetFmatFunction()
+
+# Fundamental Matrix for Fluid Solutions Inverse
+def GetFmatINVFunction():
+    L_, r_, g_, rho_ = sym.symbols('L_ r_ g_ rho_')
+    matrix = sym.Matrix([
+                        [ ((4*np.pi*G*rho_)/((1+2*L_)*g_))                  * r_**(1-L_) ,  (1/(1+2*L_)) * r_**(1-L_) ],
+                        [ (((1+2*L_)*g_ - 4*np.pi*G*rho_*r_)/((1+2*L_)*g_)) * r_**(1+L_) , -(1/(1+2*L_)) * r_**(2+L_) ]
+                        ])
+    return sym.lambdify([L_, r_, g_, rho_], matrix)
+
+FmatINV = GetFmatINVFunction()
 
 ############################################################################################################
 ############################################################################################################
@@ -18,9 +74,6 @@ r, θ, φ, t = sym.symbols(  'r θ φ t'    ,   real=True  )
 ############################################################################################################
 #                                 Love Number / y-Function Calculator                                      #
 def lovefunc(L_, rin_, pin_, uin_, nin_, w_):                                                              #
-
-    G = 6.67e-11
-
 
     # Number of layers in the body
     layno = len(rin_)
@@ -64,53 +117,9 @@ def lovefunc(L_, rin_, pin_, uin_, nin_, w_):                                   
         return ((4*np.pi*G)/(3*r_**2)) * gcalc
 
 
-    # Fundamental Matrix for Elastic Solutions
-    def Emat(r_, g_, rho_, mu_):
-        return sym.Matrix([
-                           [                                             r_**(1+L_) ,                                r_**(-1+L_) , 0                      ,                                               r_**(-L_)   ,                                r_**(-2-L_) , 0                  ],
-                           [ ((3+L_)/(L_*(1+L_)))                      * r_**(1+L_) , (1/L_)                       * r_**(-1+L_) , 0                      , -((-2+L_)/(L_*(1+L_)))                      * r_**(-L_)   , -(1/(1+L_))                  * r_**(-2-L_) , 0                  ],
-                           [ (2*mu_*((-3+L_*(-1+L_))/L_) + r_*rho_*g_) * r_**(L_)   , (2*mu_*(-1+L_) + r_*rho_*g_) * r_**(-2+L_) , rho_     * r_**(L_)    , (2*mu_*((1-L_*(3+L_))/(1+L_)) + r_*rho_*g_) * r_**(-1-L_) , (2*mu_*(-2-L_) + r_*rho_*g_) * r_**(-3-L_) , rho_ * r_**(-1-L_) ],
-                           [ 2*mu_*((2+L_)/(1+L_))                     * r_**(L_)   , 2*mu_*((-1+L_)/(L_))         * r_**(-2+L_) , 0                      , 2*mu_*((-1+L_)/(L_))                        * r_**(-1-L_) , 2*mu_*((2+L_)/(1+L_))        * r_**(-3-L_) , 0                  ],
-                           [ 0                                                      , 0                                          ,            r_**(L_)    , 0                                                         , 0                                          ,        r_**(-1-L_) ],
-                           [ 4*np.pi*G*rho_                           * r_**(1+L_) , 4*np.pi*G*rho_              * r_**(-1+L_) , (1+2*L_) * r_**(-1+L_) , 4*np.pi*G*rho_                             * r_**(-L_)   , 4*np.pi*G*rho_              * r_**(-2-L_) , 0                  ]
-                           ])
-
-
-    # Fundamental Matrix for Elastic Solutions Invserse
-    def EmatINV(r_, g_, rho_, mu_):
-        return sym.Matrix([
-                           [ -(((2*mu_*(2+L_) - r_*rho_*g_)*L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_))))         * r_**(-1-L_) , ((L_**2 *(1+L_)*(2+L_)) / (3+4*L_*(2+L_)))  * r_**(-1-L_) , -((L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(-L_)  , ((L_**2 *(1+L_))/(2*mu_*(3+4*L_*(2+L_))))   * r_**(-L_)  , ((L_*(1+L_)*rho_)/(2*mu_*(3+4*L_*(2+L_))))  * r_**(-L_)  , 0                          ],
-                           [  ((L_*(2*mu_*(L_*(3+L_)-1)-(1+L_)*r_*rho_*g_))/(2*mu_*(-1+4*L_**2)))       * r_**(1-L_)  , -((L_*(-1+L_)*(1+L_)**2)/(-1+4*L_**2))       * r_**(1-L_)  ,  ((L_*(1+L_))/(2*mu_*(-1+4*L_**2)))    * r_**(2-L_) , -(((-2+L_)*L_*(1+L_))/(2*mu_*(-1+4*L_**2))) * r_**(2-L_) , -((L_*(1+L_)*rho_)/(2*mu_*(-1+4*L_**2)))    * r_**(2-L_) , 0                          ],
-                           [ -((4*np.pi*G*rho_)/(1+2*L_))                                              * r_**(1-L_)  , 0                                                         , 0                                                   , 0                                                        , 0                                                        , (1/(1+2*L_)) * r_**(1-L_)  ],
-                           [  ((L_*(1+L_)*(2*mu_*(-1+L_) + r_*rho_*g_))/(2*mu_*(-1+4*L_**2)))           * r_**(L_)    , ((L_*(-1+L_)*(1+L_)**2)/(-1+4*L_**2))        * r_**(L_)    , -((L_*(1+L_))/(2*mu_*(-1+4*L_**2)))    * r_**(1+L_) , -((L_*(1+L_)**2)/(2*mu_*(-1+4*L_**2)))      * r_**(1+L_) , ((L_*(1+L_)*rho_)/(2*mu_*(-1+4*L_**2)))     * r_**(1+L_) , 0                          ],
-                           [ -(((1+L_)*(2*mu_*(-3+L_*(-1+L_))+ L_*r_*rho_*g_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(2+L_)  , -((L_**2 *(1+L_)*(2+L_))/((3+4*L_*(2+L_)))) * r_**(2+L_)  , ((L_*(1+L_))/(2*mu_*(3+4*L_*(2+L_))))  * r_**(3+L_) , ((L_*(1+L_)*(3+L_))/(2*mu_*(3+4*L_*(2+L_)))) * r_**(3+L_) , -((L_*(1+L_)*rho_)/(2*mu_*(3+4*L_*(2+L_)))) * r_**(3+L_) , 0                          ],
-                           [  ((4*np.pi*G*rho_)/(1+2*L_))                                              * r_**(2+L_)  , 0                                                         , 0                                                   , 0                                                        ,                                               r_**(1+L_) , -(1/(1+2*L_)) * r_**(2+L_) ]
-                           ])
-
-
-    # Fundamental Matrix for Fluid Solutions
-    def Fmat(r_, g_, rho_):
-        return sym.Matrix([
-                           [ -(1/g_)                                              * r_**L_      , -(1/g_)                                               * r_**(-1-L_) ],
-                           [ ((4*np.pi*G*rho_*r_ - (4+L_)*g_)/(L_*(1+L_)*g_**2)) * r_**L_      , ((4*np.pi*G*rho_*r_ + (-3+L_)*g_)/(L_*(1+L_)*g_**2)) * r_**(-1-L_) ],
-                           [ 0                                                                  , 0                                                                   ],
-                           [ 0                                                                  , 0                                                                   ],
-                           [                                                        r_**L_      ,                                                         r_**(-1-L_) ],
-                           [ ((-4*np.pi*G*rho_*r_ + (1+2*L_)*g_)/(g_))           * r_**(-1+L_) , -((4*np.pi*G*rho_)/(g_))                             * r_**(-1-L_) ]
-                           ])
-
-
-    # Fundamental Matrix for Fluid Solutions Inverse
-    def FmatINV(r_, g_, rho_):
-        return sym.Matrix([
-                           [ ((4*np.pi*G*rho_)/((1+2*L_)*g_))                  * r_**(1-L_) ,  (1/(1+2*L_)) * r_**(1-L_) ],
-                           [ (((1+2*L_)*g_ - 4*np.pi*G*rho_*r_)/((1+2*L_)*g_)) * r_**(1+L_) , -(1/(1+2*L_)) * r_**(2+L_) ]
-                           ])
-
-
     # Make empty lists for boundary conditions resulting from elastic->fluid interface
     fluidBC     = []
-    fluidBCvals = sym.Matrix(0, 1, [])
+    fluidBCvals = []
 
 
     # Make empty lists for each layer's fundimental matrix
@@ -119,102 +128,102 @@ def lovefunc(L_, rin_, pin_, uin_, nin_, w_):                                   
 
     # Determine if the core is fluid or not & produce core matrix
     if fluidlayerlist[0]==0:
-        mats[0] = Fmat(r, gfunc(r, 0), plist[0])[:,0].applyfunc(sym.expand)
+        mats[0] = Fmat(L_, rlist[0], gfunc(rlist[0], 0), plist[0])[:,0]
     else:
-        mats[0] = Emat(r, gfunc(r, 0), plist[0], ulist[0])[:,0:3].applyfunc(sym.expand)
+        mats[0] = Emat(L_, rlist[0], gfunc(rlist[0], 0), plist[0], ulist[0])[:,0:3]
 
 
     # Produce the matrix for all the other layers
     for i in range(1,layno):
         if i-1 in fluidlayerlist and i in fluidlayerlist:
 
-            mats[i] = (Fmat(r, gfunc(r, i), plist[i]) * FmatINV(rlist[i-1], gfunc(rlist[i-1], i-1), plist[i]) * mats[i-1][4:,:].subs(r,rlist[i-1])).applyfunc(sym.expand)
+            mats[i] = (Fmat(L_, rlist[i], gfunc(rlist[i], i), plist[i]) @ FmatINV(L_, rlist[i-1], gfunc(rlist[i-1], i-1), plist[i]) @ mats[i-1][4:,:])
         #            print "fluid fluid"
 
 
         elif i-1 in fluidlayerlist and i not in fluidlayerlist:
 
-            mattemp = mats[i-1][:,:].subs(r,rlist[i-1])
+            mattemp = mats[i-1][:,:]
             mattemp[1:2,:]=sym.zeros(1,len(mattemp[1:2,:]))
-            mattemp2 = sym.Matrix([[-1,0],[0,1],[-plist[i-1]*gfunc(rlist[i-1],i-1),0],[0,0],[0,0],[-4 *np.pi *G *plist[i-1],0]]).col_insert(0,mattemp)
+            rhs = np.array([[-1,0],[0,1],[-plist[i-1]*gfunc(rlist[i-1],i-1),0],[0,0],[0,0],[-4 *np.pi *G *plist[i-1],0]])
+            mattemp2 = np.hstack((mattemp, rhs)) #sym.Matrix([[-1,0],[0,1],[-plist[i-1]*gfunc(rlist[i-1],i-1),0],[0,0],[0,0],[-4 *np.pi *G *plist[i-1],0]]).col_insert(0,mattemp)
 
-
-            mats[i] = (Emat(r, gfunc(r, i), plist[i], ulist[i]) * EmatINV(rlist[i-1], gfunc(rlist[i-1], i-1), plist[i], ulist[i]) * mattemp2).applyfunc(sym.expand)
+            mats[i] = (Emat(L_, rlist[i], gfunc(rlist[i], i), plist[i], ulist[i]) @ EmatINV(L_, rlist[i-1], gfunc(rlist[i-1], i-1), plist[i], ulist[i]) @ mattemp2)
         #            print "fluid elastic"
 
 
         elif i-1 not in fluidlayerlist and i in fluidlayerlist:
 
-            fluidBC.append((mats[i-1][2:3,:] - plist[i] * gfunc(rlist[i-1], i-1) * ((mats[i-1][4:5,:] / gfunc(rlist[i-1], i-1)) + mats[i-1][0:1,:])).subs(r,rlist[i-1]))
-            fluidBC.append(mats[i-1][3:4,:].subs(r,rlist[i-1]))
+            fluidBC.append((mats[i-1][2:3,:] - plist[i] * gfunc(rlist[i-1], i-1) * ((mats[i-1][4:5,:] / gfunc(rlist[i-1], i-1)) + mats[i-1][0:1,:])))
 
-            fluidBCvals = sym.Matrix([[0]]).row_insert(0,fluidBCvals)
-            fluidBCvals = sym.Matrix([[0]]).row_insert(0,fluidBCvals)
+            fluidBC.append(mats[i-1][3:4,:])
 
-            mats[i] = (Fmat(r, gfunc(r, i), plist[i]) * FmatINV(rlist[i-1], gfunc(rlist[i-1], i-1), plist[i]) * (mats[i-1][5:6,:] - 4*np.pi*G*plist[i]*((mats[i-1][4:5,:] / gfunc(rlist[i-1], i-1)) + mats[i-1][0:1,:])).subs(r,rlist[i-1]).row_insert(0,mats[i-1][4:5,:].subs(r,rlist[i-1]))).applyfunc(sym.expand)
+            fluidBCvals.extend([[0], [0]])
+
+            mats[i] = (Fmat(L_, rlist[i], gfunc(rlist[i], i), plist[i]) @ FmatINV(L_, rlist[i-1], gfunc(rlist[i-1], i-1), plist[i]) \
+                 @ np.insert((mats[i-1][5:6,:] - 4*np.pi*G*plist[i]*((mats[i-1][4:5,:] / gfunc(rlist[i-1], i-1)) + mats[i-1][0:1,:])), 0, mats[i-1][4:5,:], 0))
+
         #            print "elastic fluid"
 
 
         elif i-1 not in fluidlayerlist and i not in fluidlayerlist:
 
-            mats[i] = (Emat(r, gfunc(r, i), plist[i], ulist[i]) * EmatINV(rlist[i-1], gfunc(rlist[i-1], i-1), plist[i], ulist[i]) * mats[i-1].subs(r,rlist[i-1])).applyfunc(sym.expand)
+            mats[i] = (Emat(L_, rlist[i], gfunc(rlist[i], i), plist[i], ulist[i]) @ EmatINV(L_, rlist[i-1], gfunc(rlist[i-1], i-1), plist[i], ulist[i]) @ mats[i-1])
     #            print "elastic elastic"
 
 
 
     # Give that matrix right at the body surface
-    surfmat = mats[-1].subs(r,rlist[-1]).applyfunc(sym.expand)
+    surfmat = mats[-1]
     #    print "surface matrix"
-
 
     # Pad the list of elastic->fluid interface boundary condition with zeros to the right (so all rows have the same ammt of columns for BC constants)
     for i in range(len(fluidBC)):
-        fluidBC[i] = sym.Matrix(np.lib.pad(fluidBC[i],((0,0),(0,len(surfmat[2:3,:])-len(fluidBC[i]))),'constant'))
+        fluidBC[i] = np.lib.pad(fluidBC[i],((0,0),(0,surfmat[2:3,:].shape[1]-fluidBC[i].shape[1])),'constant')
 
     # Recast the e->f BC list as a matrix
-    fluidBC = sym.Matrix(fluidBC)
-
+    fluidBC = np.concatenate(fluidBC)
 
     # Join the surface BCs to the e->f BCs
     if fluidlayerlist[-1]==layno-1:
-        BCmat  = fluidBC.col_join(surfmat[5:6,:])
-        BCvals = fluidBCvals.col_join(sym.Matrix([[-(2*L_+1)/rlist[-1]]]))
-    elif fluidBC == sym.Matrix(0, 0, []):
-        BCmat  = sym.Matrix([surfmat[2:3,:],surfmat[3:4,:],surfmat[5:6,:]])
-        BCvals = sym.Matrix([[0],[0],[-(2*L_+1)/rlist[-1]]])
+        BCmat  = np.concatenate([fluidBC, surfmat[5:6,:]])
+        BCvals = np.concatenate([fluidBCvals, [[-(2*L_+1)/rlist[-1]]]])
+    elif fluidBC == []:
+        BCmat  = np.concatenate([surfmat[2:3,:],surfmat[3:4,:],surfmat[5:6,:]])
+        BCvals = np.concatenate([[0],[0],[-(2*L_+1)/rlist[-1]]])
     else:
-        BCmat  = fluidBC.col_join( sym.Matrix([surfmat[2:3,:],surfmat[3:4,:],surfmat[5:6,:]]))
-        BCvals = fluidBCvals.col_join(sym.Matrix([[0],[0],[-(2*L_+1)/rlist[-1]]]))
+        BCmat = np.concatenate([fluidBC, surfmat[2:3,:],surfmat[3:4,:],surfmat[5:6,:]])
+        BCvals = np.concatenate([fluidBCvals, [[0],[0],[-(2*L_+1)/rlist[-1]]]])
     #    print "BC stuff"
 
 
-
     # Solve for the constants of integration
-    consts = (BCmat.inv() * BCvals).applyfunc(sym.simplify)
+    # consts = (BCmat.inv() * BCvals).applyfunc(sym.simplify)
+    consts = np.linalg.solve(BCmat, BCvals)
+
     #    print "constants"
 
 
 
 
     # Calculate the Love numbers
-    lovenums = [sym.expand(gfunc(rlist[-1], layno-1)*(surfmat[0:1,:]*consts)[0]) ,
-                sym.expand(gfunc(rlist[-1], layno-1)*(surfmat[1:2,:]*consts)[0]) ,
-                sym.expand(-((surfmat[4:5,:]*consts)[0] + 1)) ]
+    lovenums = np.array([gfunc(rlist[-1], layno-1)*(surfmat[0:1,:]@consts)[0],
+                gfunc(rlist[-1], layno-1)*(surfmat[1:2,:]@consts)[0],
+                -((surfmat[4:5,:]@consts)[0] + 1)]).flatten()
+    lovenums = sym.Array(lovenums)
 #    print "love numbers"
 
 
 
     # Calculate the y-functions in every layer
-    yfuncs = []
-    for i in range(len(mats)):
-        yfuncs.append(sum((mats[i]*sym.Matrix(consts[:len(mats[i][0:1,:])])).applyfunc(sym.expand).tolist(),[]))
+    # yfuncs = []
+    # for i in range(len(mats)):
+    #     yfuncs.append(sum((mats[i]*sym.Matrix(consts[:len(mats[i][0:1,:])])).applyfunc(sym.expand).tolist(),[]))
 #    print "y functions"
 
 
 
-
-
-
+    breakpoint()
 
     return lovenums
 
@@ -407,9 +416,9 @@ class satellite:                                                                
             h = self.lovelist[i][0]
             l = self.lovelist[i][1]
 
-            self.tt += ((2.0*self.uR)/(self.R*self.g)) * ((3.0*h -  6.0*l)*POT + l*sym.diff(POT,θ,θ))
-            self.pp += ((2.0*self.uR)/(self.R*self.g)) * ((3.0*h - 12.0*l)*POT - l*sym.diff(POT,θ,θ))
-            self.tp += ((2.0*self.uR)/(self.R*self.g)) *l * sym.csc(θ)*(sym.diff(POT,θ,φ) - sym.atan(θ)*sym.diff(POT,φ))
+            self.tt += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) * ((3.0*h -  6.0*l)*POT + l*sym.diff(POT,θ,θ)))
+            self.pp += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) * ((3.0*h - 12.0*l)*POT - l*sym.diff(POT,θ,θ)))
+            self.tp += sym.Matrix(((2.0*self.uR)/(self.R*self.g)) *l * sym.csc(θ)*(sym.diff(POT,θ,φ) - sym.atan(θ)*sym.diff(POT,φ)))
 
         self.ttR = sym.re(self.tt)
         self.ppR = sym.re(self.pp)
