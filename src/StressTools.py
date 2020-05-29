@@ -17,7 +17,7 @@ LAT_STEP_SIZE = 15
 LON_STEP_SIZE = 10
 RAD_MULTIPLIER = np.pi / 180
 DEG_MULTIPLIER = 180 / np.pi
-CPUS = multiprocessing.cpu_count() - 2
+CPUS = multiprocessing.cpu_count()
 CACHE_DIR = './cache'
 
 mem = Memory(CACHE_DIR, verbose=0)
