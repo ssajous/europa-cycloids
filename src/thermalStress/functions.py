@@ -260,7 +260,7 @@ def solve_stress_viscoelastic_shell(grid_r, mu, sigma_r_last, alpha_dTdotdr, Pex
     return sigma_r, sigma_t, sigma_rD, sigma_tD
 
 
-def calculate_stress_curve_at_time(startTime, endTime, grid_r):
+def calculate_stress_curve_at_time(startTime, endTime, gridr):
     # 1. Calculate the amount of basal freeze-on and advance the mesh
     # 2. Solve the heat equation using an implicit method
     # 3. Solve for sigma_r
@@ -268,6 +268,7 @@ def calculate_stress_curve_at_time(startTime, endTime, grid_r):
     # 5. Calculate the radial displacements u(r)
 
     # initialize solution vectors (IC)
+    grid_r = np.copy(gridr)
     sigma_r_last = np.zeros(nr)  # initial stresses
     sigma_t_last = np.zeros(nr)  # initial stresses
     T_last = np.linspace(Tb, Ts, nr)
@@ -394,12 +395,25 @@ def calculate_stress_curve_at_time(startTime, endTime, grid_r):
                                     et.reshape(et.shape[0], 1),
                                     T.reshape(et.shape[0], 1),
                                     ur.reshape(et.shape[0], 1),
-                                    np.ones((grid_r.shape[0], 1)) * time
+                                    np.ones((grid_r.shape[0], 1)) * time,
+                                    np.ones((grid_r.shape[0], 1)) * z
                                  ], axis=1)
         if results is None:
             results = result
         else:
             results = np.concatenate([results, result])
 
-    return pd.DataFrame(results, columns=['r', 'sigma_r', 'stress', 'strain', 'et', 'temp', 'displacement', 'time'])
+    return pd.DataFrame(results, columns=['r', 'sigma_r', 'stress', 'strain', 'et',
+                                          'temp', 'displacement', 'time', 'thickness'])
+
+
+def find_data_at_peak_stress(data, stressThreshold):
+    groups = data.groupby('time')
+    stressData = groups.filter(lambda x: x.stress.max() >= stressThreshold)
+
+    if stressData.shape[0] == 0:
+        return None
+
+    peakedStress = stressData.loc[stressData['time'] == stressData['time'].min()]
+    return peakedStress
 
