@@ -13,6 +13,7 @@ pip-delete-this-directory.txt
 cache/
 performance.log
 .vscode/
+.idea/
 
 src/output/
 perf.log
