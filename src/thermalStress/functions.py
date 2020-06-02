@@ -3,6 +3,7 @@ import scipy.sparse as sps
 from scipy.sparse.linalg import spsolve
 import math
 import pandas as pd
+from numba import jit
 
 # Numerical parameters
 nr = 200 # number of grid points
@@ -38,8 +39,12 @@ Lf = 334*1000 # latent heat of fusion (J/kg)
 kappa = 1e-6# m/s/s
 k=kappa*rho_i*Cp
 
-dtmax = 1e3*seconds_in_year;
-dtmin = seconds_in_year;
+dtmax = 1e3*seconds_in_year
+dtmin = seconds_in_year
+
+
+# def mu(T):
+#     mub * math.exp(Q * (Tb - T) / R / Tb / T)
 
 
 def interpolate_solution(new_grid_r, grid_r, T_last, sigma_r_last, sigma_t_last, er_last, et_last, Tb):
@@ -374,7 +379,7 @@ def calculate_stress_curve_at_time(startTime, endTime, gridr):
                     f'dt={dt / seconds_in_year} yr, time={(time + dt) / seconds_in_year / 1e6} Myr, Pex_post {Pex_post} Pex {Pex}, converged in {iterator} iterations')
                 break
             elif iterator == maxiter - 1:
-                raise Error('Nonlinear loop failed to converge')
+                raise Exception('Nonlinear loop failed to converge')
 
         # 6. advance to next time step and plot (if needed)
         sigma_r_last = sigma_r
