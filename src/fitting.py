@@ -88,6 +88,7 @@ def match_orientations(curve, stresses, positive_only=True):
 
     return merged_unique
 
+
 def calculate_loss(frame, startingPoint=1, pointCount=100):
     if len(frame) == 0:
         return pointCount
@@ -100,6 +101,7 @@ def calculate_loss(frame, startingPoint=1, pointCount=100):
 
     diffs = np.append(diffs, [startDiff, endDiff])
     return max(diffs)
+
 
 def test_arc(
     arc,
@@ -133,6 +135,7 @@ def test_arc(
 
     return pd.DataFrame(results)
 
+
 def find_heading_error(curve, stresses, positive_only=True):
     find_stress_level_of_total(stresses)
 
@@ -156,10 +159,12 @@ def find_heading_error(curve, stresses, positive_only=True):
                 'heading_y', 'stress', 'deltaHeading', 'isCusp', 'arcNumber',
                 'deltaStress', 'overallMaxStress', 'stressPctOfMax']]
 
+
 def find_stress_level_of_total(field):
     groups = field.groupby(['lon', 'lat'])['stress']
     field['overallMaxStress'] = groups.transform('max')
     field['stressPctOfMax'] = field['stress'] / field['overallMaxStress']
+
 
 def normalize_parameters(params):
     min_vals = np.array([0, 0.1, 0])
@@ -171,6 +176,7 @@ def normalize_parameters(params):
         variables = (params - min_vals[0:2:]) / (max_vals[0:2:] - min_vals[0:2:])
 
     return variables
+
 
 def calc_non_monotonic_error_rate(series):
     if series.shape[0] == 0:
@@ -197,6 +203,7 @@ def calc_non_monotonic_error_rate(series):
 
     return errorRate
 
+
 def get_time_error_coefficient(data):
     timedf = data.copy().sort_values('pointNumber')
 
@@ -205,6 +212,7 @@ def get_time_error_coefficient(data):
 
     error_rate = calc_non_monotonic_error_rate(timedf.time)
     return 1 + error_rate
+
 
 def get_stress_error_coefficient(data):
     cusps = data.copy()
@@ -218,6 +226,7 @@ def get_stress_error_coefficient(data):
     reverse_error_rate = calc_non_monotonic_error_rate(starts.stress)
 
     return 1 + min([forward_error_rate, reverse_error_rate])
+
 
 def calc_monotonic_errors(data, dataset):
     error = get_stress_error_coefficient(dataset)
@@ -310,12 +319,14 @@ def calcKStress(stresses, lengths):
     return (1.12 * stresses * 1000 * \
         np.sqrt(np.pi * lengths * 1000)) / 1000
 
+
 def calcChangeRate(x, y):
     dx = np.diff(x)
     dy = np.diff(y)
     changes = np.insert(np.abs(dy/dx), 0, 0)
 
     return changes
+
 
 def addMetrics(stress, interior):
     radiusKm = interior.radius / 1000
@@ -334,6 +345,7 @@ def addMetrics(stress, interior):
     stress['headingAcceleration'] = calcChangeRate(stress['lon'], stress['headingChangeRate'])
 
     return stress
+
 
 def match_stresses(batch, params, interior, saveStressField=False, path='./output/stressfield.csv.gz'):
     if len(params) == 3:
@@ -354,13 +366,32 @@ def match_stresses(batch, params, interior, saveStressField=False, path='./outpu
         nsr=0,
         is_async=True,
         steps=360)
+
+    cusps = test_data.loc[test_data['isCusp']]
+    cuspField = tools.build_simon_stress_field(
+        interior,
+        cusps,
+        phase=phase,
+        eccentricity=0.01,
+        obliquity=np.radians(obliquity),
+        nsr=0,
+        is_async=True,
+        steps=360)
+
+    cusp_error = find_heading_error(cusps.copy(), cuspField, positive_only=False)
     error = find_heading_error(test_data, field)
+    error = calc_monotonic_errors(error, cusp_error)
     error = addMetrics(error, interior)
+
+    result = error['deltaHeading'] * (1 + (1 - error['stressPctOfMax'])) * error['stressError'] * error['timeError']
+
+    root_mean_squared_error = np.sqrt(np.sum(np.power(result, 2))) / result.shape[0]
 
     if saveStressField:
         field.to_csv(path, index=False, compression='gzip')
 
-    return error
+    return error, root_mean_squared_error
+
 
 class Adam:
 

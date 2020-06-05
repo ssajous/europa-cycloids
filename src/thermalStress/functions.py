@@ -7,37 +7,37 @@ from numba import jit
 
 # Numerical parameters
 nr = 200 # number of grid points
-relaxation_parameter=.01 # used in nonlinear loop.
-maxiter=300
+relaxation_parameter = .01 # used in nonlinear loop.
+maxiter = 300
 
 # Define physical constants and parameters
 # Physical constants
 seconds_in_year = 3.1558e7
-R=8.314e-3     # in kJ/mol/K
+R = 8.314e-3     # in kJ/mol/K
 # Boundary conditions and internal heating
-H=0 # internal heating rate.
-Tb=270
-Ts=100
-Ro = 2.52e5             # outer radius of ice shell (m)
-Ri = 2.52e5-12e3         # inner radius of ice shell (m)
-Rc = 1.60e5             # core radius (m)
-# Elastic and Viscous propertiespara
+H = 0 # internal heating rate.
+Tb = 270
+Ts = 100
+Ro = 1562.0e3             # outer radius of ice shell (m)
+Ri = Ro - 10e3        # inner radius of ice shell (m)
+Rc = 1.394e6            # core radius (m)
+# Elastic and Viscous properties
 E = 5e9        # shear modulus of ice (Pa)
 nu = 0.3      # Poisson ratio of ice (-)
 beta_w = 4e-10 # Compressibility of water (1/Pa)
 alpha_l = 1e-4 # coefficient of linear thermal expansion ( alpha_v/3 ) (1/K)
-rho_i=900      # density of ice (kg/m^3)
-rho_w=1000     # density of water (kg/m^3)
-Q=40           # activation energy, kJ/mol, Nimmo 2004 (kJ/mol)
-mub=1e15       # basal viscosity (Pa-s)
+rho_i = 900      # density of ice (kg/m^3)
+rho_w = 1000     # density of water (kg/m^3)
+Q = 40           # activation energy, kJ/mol, Nimmo 2004 (kJ/mol)
+mub = 1e15       # basal viscosity (Pa-s)
 mu = lambda T: mub * math.exp(Q * (Tb-T) / R / Tb / T) # function to evaluate viscosity in Pa-s given T
-g = 0.113      # used to plot a failure curve
+g = 1.313      # used to plot a failure curve
 tau = 3e6 # tensile strength, Pa
 # Thermal properties
-Cp = 2100 #heat capacity of ice J/kg/K
+Cp = 2100  #heat capacity of ice J/kg/K
 Lf = 334*1000 # latent heat of fusion (J/kg)
-kappa = 1e-6# m/s/s
-k=kappa*rho_i*Cp
+kappa = 1e-6 # m/s/s
+k = kappa * rho_i * Cp
 
 dtmax = 1e3*seconds_in_year
 dtmin = seconds_in_year
@@ -244,6 +244,9 @@ def solve_stress_viscoelastic_shell(grid_r, mu, sigma_r_last, alpha_dTdotdr, Pex
     LHS = sps.csr_matrix(LHS)
     sigma_r = spsolve(LHS, RHS)
 
+    if math.isinf(sigma_r[0]):
+        raise Exception('Infinity found')
+
     # 4. calculate the tangential stress sigma_t
     # first, calculate dsr/dr
     dsrdr = np.zeros(sigma_r.shape)
@@ -265,7 +268,7 @@ def solve_stress_viscoelastic_shell(grid_r, mu, sigma_r_last, alpha_dTdotdr, Pex
     return sigma_r, sigma_t, sigma_rD, sigma_tD
 
 
-def calculate_stress_curve_at_time(startTime, endTime, gridr):
+def calculate_stress_curve_until_time(startTime, endTime, gridr):
     # 1. Calculate the amount of basal freeze-on and advance the mesh
     # 2. Solve the heat equation using an implicit method
     # 3. Solve for sigma_r
@@ -342,6 +345,9 @@ def calculate_stress_curve_at_time(startTime, endTime, gridr):
         # calculated displacement
         for iterator in range(maxiter):
             if iterator > 0:
+                if iterator == 259:
+                    breakpoint()
+
                 Pex = Pex + relaxation_parameter * (Pex_post - Pex)
             else:
                 Pex = Pex_pred
@@ -378,6 +384,8 @@ def calculate_stress_curve_at_time(startTime, endTime, gridr):
                 print(
                     f'dt={dt / seconds_in_year} yr, time={(time + dt) / seconds_in_year / 1e6} Myr, Pex_post {Pex_post} Pex {Pex}, converged in {iterator} iterations')
                 break
+            elif math.isnan(Pex_post) or math.isnan(Pex) or math.isinf(Pex_post):
+                raise Exception('NaN encountered in nonlinear loop')
             elif iterator == maxiter - 1:
                 raise Exception('Nonlinear loop failed to converge')
 
