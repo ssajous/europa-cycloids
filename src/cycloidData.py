@@ -179,7 +179,7 @@ def loadMira(points):
 
 
 def loadCilicia(points):
-    cilicia = pd.read_csv("./obsData/ciliciaLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
+    cilicia = pd.read_csv("./obsData/CiliciaLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     cilicia_arcs = [
         cilicia[0:15],
