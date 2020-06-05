@@ -182,7 +182,7 @@ def lovefunc(L_, rin_, pin_, uin_, nin_, w_):  #
         elif i - 1 in fluidlayerlist and i not in fluidlayerlist:
 
             mattemp = mats[i - 1][:, :]
-            mattemp[1:2, :] = sym.zeros(1, len(mattemp[1:2, :]))
+            mattemp[1:2, :] = 0
             rhs = np.array([[-1, 0], [0, 1], [-plist[i - 1] * gfunc(rlist[i - 1], i - 1), 0], [0, 0], [0, 0],
                             [-4 * np.pi * G * plist[i - 1], 0]])
             mattemp2 = np.hstack((mattemp,
