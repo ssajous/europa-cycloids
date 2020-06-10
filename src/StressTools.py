@@ -86,6 +86,7 @@ def get_stress_for_latitude(step, time, lat):
 
     return results
 
+
 def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = True):
     """
     Creates a data frame with the results of stress calculations for a range of
@@ -163,6 +164,28 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     return df.sort_values(['latitude', 'longitude', 'time_step'])
 
 
+def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations=1, is_async=True):
+    stress_calc = theano_function([t, φ, θ], (satellite.PC1, satellite.PC2, satellite.PCΨ, satellite.PCΨ2),
+                             dims={t: 1, φ: 1, θ: 1},
+                             dtypes={t: 'float64', φ: 'float64', θ: 'float64'})
+
+    data = []
+
+    # mean_motion = (2 * np.pi) / orbit_time_seconds
+    max_time = orbit_time_seconds * rotations
+    times = np.linspace(1, max_time, TIME_STEPS * rotations)
+    parameters = np.array([[time, point.lat, point.lon] for point in point_frame.itertuples() for time in times])
+    stress_output = stress_calc(parameters[:, 0:1].flatten(),
+                                parameters[:, 1:2].flatten(),
+                                parameters[:, 2:3].flatten())
+    output_stacked = np.column_stack(stress_output)
+
+    results = pd.DataFrame(np.hstack([parameters, output_stacked]),
+                           columns=['time', 'lat', 'lon', 'principal1', 'principal2', 'orientation1', 'orientation2'])
+
+    return results.sort_values(['lat', 'lon', 'time'])
+
+
 def get_stresses_for_point(
     interior,
     lon,
@@ -201,6 +224,7 @@ def get_stresses_for_point(
         results[0]['deltaStress'] = results[0]['stress'] - results[-1]['stress']
         return results
 
+
 def build_simon_stress_field(
     interior,
     pointFrame,
@@ -226,5 +250,7 @@ def build_simon_stress_field(
 
     return df
 
+
 get_simon_stress_field = mem.cache(build_simon_stress_field)
 get_stress_field = mem.cache(build_stress_field)
+get_mew_stress_field = mem.cache(build_mew_stress_field)
