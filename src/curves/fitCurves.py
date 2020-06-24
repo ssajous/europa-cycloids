@@ -123,8 +123,8 @@ def newtonRaphsonRootFind(bez, point, u):
        u_n+1 = u_n - |q(u_n)-p * q'(u_n)| / |q'(u_n)**2 + q(u_n)-p * q''(u_n)|
     """
     d = bezier.q(bez, u)-point
-    numerator = (d * bezier.qprime(bez, u)).sum()
-    denominator = (bezier.qprime(bez, u)**2 + d * bezier.qprimeprime(bez, u)).sum()
+    numerator = (d * bezier.q_prime(bez, u)).sum()
+    denominator = (bezier.q_prime(bez, u) ** 2 + d * bezier.q_prime_prime(bez, u)).sum()
 
     if denominator == 0.0:
         return u

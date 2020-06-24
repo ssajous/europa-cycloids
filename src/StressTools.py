@@ -22,13 +22,15 @@ CACHE_DIR = './cache'
 
 mem = Memory(CACHE_DIR, verbose=0)
 
-r, θ, φ, t = sym.symbols('r θ φ t', real = True)
+r, θ, φ, t = sym.symbols('r θ φ t', real=True)
 
 get_principal1 = None
 get_principal2 = None
 get_principal_orientation = None
 get_principal_orientation2 = None
 
+
+# noinspection PyCallingNonCallable
 def get_stress_for_latitude(step, time, lat):
     """
     Do NOT use this function directly! Use build_stress_field instead.
@@ -55,14 +57,14 @@ def get_stress_for_latitude(step, time, lat):
     """
     results = []
 
-    lat_radians = (90-lat) * RAD_MULTIPLIER #np.radians(lat)
+    lat_radians = (90 - lat) * RAD_MULTIPLIER
     time_value = time
 
     for lon in range(MIN_LON, MAX_LON + 1, 10):
-        if (lat == 90 or lon == 0):
+        if lat == 90 or lon == 0:
             continue
 
-        lon_radians = lon * RAD_MULTIPLIER # np.radians(lon)
+        lon_radians = lon * RAD_MULTIPLIER
 
         principal1 = get_principal1(time_value, lat_radians, lon_radians)
         principal2 = get_principal2(time_value, lat_radians, lon_radians)
@@ -73,21 +75,22 @@ def get_stress_for_latitude(step, time, lat):
         max_stress_orientation = principal_phi if max_stress == principal1 else principal_phi2
 
         results.append({
-                'time_step': step,
-                'latitude': lat,
-                'longitude': lon,
-                'principal1': principal1,
-                'principal2': principal2,
-                'principal_orientation': principal_phi * DEG_MULTIPLIER,
-                'principal_orientation2': principal_phi2 * DEG_MULTIPLIER,
-                'max_stress': max_stress,
-                'max_stress_orientation': max_stress_orientation * DEG_MULTIPLIER
-            })
+            'time_step': step,
+            'latitude': lat,
+            'longitude': lon,
+            'principal1': principal1,
+            'principal2': principal2,
+            'principal_orientation': principal_phi * DEG_MULTIPLIER,
+            'principal_orientation2': principal_phi2 * DEG_MULTIPLIER,
+            'max_stress': max_stress,
+            'max_stress_orientation': max_stress_orientation * DEG_MULTIPLIER
+        })
 
     return results
 
 
-def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = True):
+# noinspection PyUnboundLocalVariable
+def build_stress_field(satellite, orbit_time_seconds, rotations=1, is_async=True):
     """
     Creates a data frame with the results of stress calculations for a range of
     latitudes and longitudes across 360 time steps
@@ -104,7 +107,7 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
         calculations. Default value is 1
     is_async: boolean, optional
         When True (default) the calculation will be spread across multiple
-        processes for peformance.  When False all calculation is done in the
+        processes for performance.  When False all calculation is done in the
         current process, this most likely slower, but better for debugging.
 
     Returns
@@ -124,10 +127,10 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     global get_principal2
     global get_principal_orientation
     global get_principal_orientation2
-    get_principal1 = sym.lambdify([t, φ, θ], satellite.PC1, modules = ["math", {"cot": math.atan}])
-    get_principal2 = sym.lambdify([t, φ, θ], satellite.PC2, modules = ["math", {"cot": math.atan}])
-    get_principal_orientation = sym.lambdify([t, φ, θ], satellite.PCΨ, modules = ["math", {"cot": math.atan}])
-    get_principal_orientation2 = sym.lambdify([t, φ, θ], satellite.PCΨ2, modules = ["math", {"cot": math.atan}])
+    get_principal1 = sym.lambdify([t, φ, θ], satellite.PC1, modules=["math", {"cot": math.atan}])
+    get_principal2 = sym.lambdify([t, φ, θ], satellite.PC2, modules=["math", {"cot": math.atan}])
+    get_principal_orientation = sym.lambdify([t, φ, θ], satellite.PCΨ, modules=["math", {"cot": math.atan}])
+    get_principal_orientation2 = sym.lambdify([t, φ, θ], satellite.PCΨ2, modules=["math", {"cot": math.atan}])
 
     data = []
 
@@ -144,15 +147,15 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     total_steps = int(TIME_STEPS * rotations)
     for step in range(1, total_steps):
         # time = np.radians(step/TIME_STEPS)
-        time = (step/TIME_STEPS) * orbit_time_seconds
+        time = (step / TIME_STEPS) * orbit_time_seconds
         for lat in range(MIN_LAT, MAX_LAT + 1, LAT_STEP_SIZE):
             if is_async:
                 # pool.apply_async will schedule the processing within separate python processes
                 # which allows the work to be distributed to multiple CPU cores
                 pool.apply_async(get_stress_for_latitude,
-                    args = (step, time, lat, ),
-                    callback=callback,
-                    error_callback=error_callback)
+                                 args=(step, time, lat,),
+                                 callback=callback,
+                                 error_callback=error_callback)
             else:
                 data.extend(get_stress_for_latitude(step, time, lat))
 
@@ -164,12 +167,10 @@ def build_stress_field(satellite, orbit_time_seconds, rotations = 1, is_async = 
     return df.sort_values(['latitude', 'longitude', 'time_step'])
 
 
-def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations=1, is_async=True):
+def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations=1):
     stress_calc = theano_function([t, φ, θ], (satellite.PC1, satellite.PC2, satellite.PCΨ, satellite.PCΨ2),
-                             dims={t: 1, φ: 1, θ: 1},
-                             dtypes={t: 'float64', φ: 'float64', θ: 'float64'})
-
-    data = []
+                                  dims={t: 1, φ: 1, θ: 1},
+                                  dtypes={t: 'float64', φ: 'float64', θ: 'float64'})
 
     # mean_motion = (2 * np.pi) / orbit_time_seconds
     max_time = orbit_time_seconds * rotations
@@ -187,63 +188,66 @@ def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations
 
 
 def get_stresses_for_point(
-    interior,
-    lon,
-    lat,
-    phase,
-    tolerance,
-    steps,
-    eccentricity,
-    obliquity,
-    nsr):
-        results = []
-        previous = 0
-        for step in range(steps):
-            current = simon.getStress(
-                interior_value=interior,
-                e_in=eccentricity,
-                colat=np.radians(90-lat),
-                lon=np.radians(360-lon),
-                steps=steps,
-                this_step=step,
-                oblq=obliquity,
-                phase=np.radians(phase),
-                NSRdelta=nsr)
-            heading_degrees = np.degrees(current[1])
-            results.append({
-                'lon': lon,
-                'lat': lat,
-                'stress': current[0],
-                'heading': heading_degrees,
-                'headingCategory': utils.round_heading(heading_degrees, tolerance),
-                'deltaStress': current[0] - previous,
-                'time': step
-            })
-            previous = current[0]
+                           interior,
+                           lon,
+                           lat,
+                           phase,
+                           tolerance,
+                           steps,
+                           eccentricity,
+                           obliquity,
+                           nsr):
+    results = []
+    previous = 0
+    for step in range(steps):
+        current = simon.getStress(
+            interior_value=interior,
+            e_in=eccentricity,
+            colat=np.radians(90 - lat),
+            lon=np.radians(360 - lon),
+            steps=steps,
+            this_step=step,
+            oblq=obliquity,
+            phase=np.radians(phase),
+            NSRdelta=nsr)
+        heading_degrees = np.degrees(current[1])
+        results.append({
+            'lon': lon,
+            'lat': lat,
+            'stress': current[0],
+            'heading': heading_degrees,
+            'headingCategory': utils.round_heading(heading_degrees, tolerance),
+            'deltaStress': current[0] - previous,
+            'time': step
+        })
+        previous = current[0]
 
-        results[0]['deltaStress'] = results[0]['stress'] - results[-1]['stress']
-        return results
+    results[0]['deltaStress'] = results[0]['stress'] - results[-1]['stress']
+    return results
 
 
 def build_simon_stress_field(
-    interior,
-    pointFrame,
-    phase,
-    eccentricity,
-    obliquity,
-    nsr,
-    is_async=True,
-    tolerance=1,
-    steps=360):
+                            interior,
+                            point_frame,
+                            phase,
+                            eccentricity,
+                            obliquity,
+                            nsr,
+                            is_async=True,
+                            tolerance=1,
+                            steps=360):
     stresses = []
 
     if is_async:
-        pointStresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point)\
-            (interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples())
+        point_stresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point)
+                                               (interior, point.lon, point.lat, phase, tolerance, steps,
+                                                eccentricity, obliquity, nsr) for point in point_frame.itertuples())
     else:
-        pointStresses = [get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity, nsr) for point in pointFrame.itertuples()]
+        point_stresses = [
+            get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity,
+                                   nsr) for point in point_frame.itertuples()]
 
-    for stress in pointStresses:
+    for stress in point_stresses:
         stresses.extend(stress)
 
     df = pd.DataFrame(stresses)

@@ -40,7 +40,7 @@ def fit_arc(arc, max_error=0.05, reverse=False, startingPoint=1, tolerance=1, ou
         for time in np.arange(0, 1, 1 / output_points):
             point = bezier.q(control, time)
 
-            heading = findHeading(bezier.findCubicRPoints(control, time))
+            heading = findHeading(bezier.find_cubic_r_points(control, time))
             rows.append({
                 'pointNumber': pointNumber,
                 'lon': point[0],
