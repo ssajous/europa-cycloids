@@ -33,7 +33,7 @@ def load_delphi(points):
     ]
 
     # delphiCurve = fitting.createCycloidBezier(delphi_arcs, maxError=0.008)
-    delphi_curve = fitting.createCycloidBezier(delphi_arcs, maxError=0.1, pointsPerCurve=points)
+    delphi_curve = fitting.create_cycloid_bezier(delphi_arcs, max_error=0.1, points_per_curve=points)
 
     return delphi, delphi_curve, delphi_arcs
 
@@ -54,7 +54,7 @@ def load_tyrrel(points):
         tyrrel[93:]
     ]
 
-    tyrrel_curve = fitting.createCycloidBezier(tyrrel_arcs, maxError=0.09, pointsPerCurve=points)
+    tyrrel_curve = fitting.create_cycloid_bezier(tyrrel_arcs, max_error=0.09, points_per_curve=points)
 
     return tyrrel, tyrrel_curve, tyrrel_arcs
 
@@ -70,7 +70,7 @@ def load_alex(points):
     ]
 
     # alexCurve = fitting.createCycloidBezier(alex_arcs, maxError=0.01135)
-    alex_curve = fitting.createCycloidBezier(alex_arcs, maxError=0.1, pointsPerCurve=points)
+    alex_curve = fitting.create_cycloid_bezier(alex_arcs, max_error=0.1, points_per_curve=points)
 
     return alex, alex_curve, alex_arcs
 
@@ -91,7 +91,7 @@ def load_sidon(points):
     ]
 
     # sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
-    sidon_curve = fitting.createCycloidBezier(sidon_arcs, maxError=0.065, pointsPerCurve=points)
+    sidon_curve = fitting.create_cycloid_bezier(sidon_arcs, max_error=0.065, points_per_curve=points)
 
     return sidon, sidon_curve, sidon_arcs
 
@@ -108,7 +108,7 @@ def load_carly(points):
     ]
 
     # carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
-    carly_curve = fitting.createCycloidBezier(carly_arcs, maxError=0.035, pointsPerCurve=points)
+    carly_curve = fitting.create_cycloid_bezier(carly_arcs, max_error=0.035, points_per_curve=points)
 
     return carly, carly_curve, carly_arcs
 
@@ -125,7 +125,7 @@ def load_dirk(points):
         dirk[50:]
     ]
 
-    dirk_curve = fitting.createCycloidBezier(dirk_arcs, pointsPerCurve=points)
+    dirk_curve = fitting.create_cycloid_bezier(dirk_arcs, points_per_curve=points)
 
     return dirk, dirk_curve, dirk_arcs
 
@@ -140,7 +140,7 @@ def load_yaphet(points):
         yaphet[31:]
     ]
 
-    yaphet_curve = fitting.createCycloidBezier(yaphet_arcs, maxError=0.12, pointsPerCurve=points)
+    yaphet_curve = fitting.create_cycloid_bezier(yaphet_arcs, max_error=0.12, points_per_curve=points)
 
     return yaphet, yaphet_curve, yaphet_arcs
 
@@ -155,7 +155,7 @@ def load_odessa(points):
         odessa[22:]
     ]
 
-    odessa_curve = fitting.createCycloidBezier(odessa_arcs, maxError=0.055, pointsPerCurve=points)
+    odessa_curve = fitting.create_cycloid_bezier(odessa_arcs, max_error=0.055, points_per_curve=points)
     odessa_curve['lon'] = convert_lon(odessa_curve['lon'])
     odessa['lon'] = convert_lon(odessa['lon'])
 
@@ -173,7 +173,7 @@ def load_mira(points):
         mira[30:]
     ]
 
-    mira_curve = fitting.createCycloidBezier(mira_arcs, maxError=0.107, pointsPerCurve=points)
+    mira_curve = fitting.create_cycloid_bezier(mira_arcs, max_error=0.107, points_per_curve=points)
     mira_curve['lon'] = convert_lon(mira_curve['lon'])
     mira['lon'] = convert_lon(mira['lon'])
 
@@ -193,7 +193,7 @@ def load_cilicia(points):
     ]
 
     # ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
-    cilicia_curve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.06, pointsPerCurve=points)
+    cilicia_curve = fitting.create_cycloid_bezier(cilicia_arcs, max_error=0.06, points_per_curve=points)
 
     return cilicia, cilicia_curve, cilicia_arcs
 
