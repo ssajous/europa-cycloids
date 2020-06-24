@@ -31,7 +31,7 @@
     obliquityPhase: 0
     obliquityPhaseRate: 0
     spinRate: 0
-    nonSynchronusRotationRate: 0
+    nonSynchronousRotationRate: 0
     librationAmplitude: 0
     librationPhase: 0
     librationFrequency: 0
