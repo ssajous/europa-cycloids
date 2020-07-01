@@ -168,6 +168,21 @@ def build_stress_field(satellite, orbit_time_seconds, rotations=1, is_async=True
 
 
 def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations=1):
+    """
+    Generates a dataset for tidal stress values at each lat/lon location input over the specified number of orbits.
+
+    :type rotations: float
+    :type point_frame: DataFrame
+    :type orbit_time_seconds: int/float
+    :type satellite: MEWTools.Satellite
+    :rtype: DataFrame
+
+    :param satellite: Definition of the interior structure of the satellite
+    :param orbit_time_seconds: Total number of seconds it takes the satellite to orbit it's primary
+    :param point_frame: DataFrame of lat/lon locations in radians. Lat is colat and lon is east lon
+    :param rotations: The number of orbits to calculate stress
+    :return: DataFrame with the stresses at each time step for all latitude/longitude points
+    """
     stress_calc = theano_function([t, φ, θ], (satellite.PC1, satellite.PC2, satellite.PCΨ, satellite.PCΨ2),
                                   dims={t: 1, φ: 1, θ: 1},
                                   dtypes={t: 'float64', φ: 'float64', θ: 'float64'})
@@ -175,7 +190,7 @@ def build_mew_stress_field(satellite, orbit_time_seconds, point_frame, rotations
     # mean_motion = (2 * np.pi) / orbit_time_seconds
     max_time = orbit_time_seconds * rotations
     times = np.linspace(1, max_time, TIME_STEPS * rotations)
-    parameters = np.array([[time, point.lat, point.lon] for point in point_frame.itertuples() for time in times])
+    parameters = np.array([[time, point.lon, point.lat] for point in point_frame.itertuples() for time in times])
     stress_output = stress_calc(parameters[:, 0:1].flatten(),
                                 parameters[:, 1:2].flatten(),
                                 parameters[:, 2:3].flatten())
@@ -229,28 +244,59 @@ def get_stresses_for_point(
 def build_simon_stress_field(
                             interior,
                             point_frame,
-                            phase,
+                            phase_degrees,
                             eccentricity,
-                            obliquity,
-                            nsr,
+                            obliquity_radians,
+                            nsr_radians,
                             is_async=True,
                             tolerance=1,
                             steps=360):
+    """
+    Generates a dataset for tidal stress values at each lat/lon location input over the duration of a satellite's full
+    orbit.
+
+    :rtype: DataFrame
+    :type steps: int
+    :type tolerance: float
+    :type is_async: bool
+    :type nsr_radians: float
+    :type obliquity_radians: float
+    :type eccentricity: float
+    :type phase_degrees: float
+    :type point_frame: DataFrame
+    :type interior: Interior
+
+    :param interior: Interior structure for the satellite
+    :param point_frame: DataFrame containing the points where stress will be evaluated. Must contain columns lat and lon
+    which represent degrees latitude and degrees west longitude respectively.
+
+    :param phase_degrees: Spin pole direction in degrees
+    :param eccentricity: satellite eccentricity value
+    :param obliquity_radians: satellite obliquity value in radians
+    :param nsr_radians: Non-synchronous rotation amount in radians
+    :param is_async: When True multiple processors will be used to calculate the stress field. Using False can sometimes
+    aid in debugging.
+    :param tolerance: Heading tolerance in degrees used to group headings into categories.
+    :param steps: The number of time steps across an orbit used to calculate stress at different points. A full orbit is
+    always used, steps only impacts the granularity.
+    :return: DataFrame with the stresses at each time step for all latitude/longitude points
+    """
     stresses = []
 
     if is_async:
         point_stresses = Parallel(n_jobs=CPUS)(delayed(get_stresses_for_point)
-                                               (interior, point.lon, point.lat, phase, tolerance, steps,
-                                                eccentricity, obliquity, nsr) for point in point_frame.itertuples())
+                                               (interior, point.lon, point.lat, phase_degrees, tolerance, steps,
+                                                eccentricity, obliquity_radians,
+                                                nsr_radians) for point in point_frame.itertuples())
     else:
         point_stresses = [
-            get_stresses_for_point(interior, point.lon, point.lat, phase, tolerance, steps, eccentricity, obliquity,
-                                   nsr) for point in point_frame.itertuples()]
+            get_stresses_for_point(interior, point.lon, point.lat, phase_degrees, tolerance, steps, eccentricity,
+                                   obliquity_radians, nsr_radians) for point in point_frame.itertuples()]
 
     for stress in point_stresses:
         stresses.extend(stress)
 
-    df = pd.DataFrame(stresses)
+    df = pd.DataFrame(stresses).sort_values(['lat', 'lon', 'time'])
 
     return df
 

@@ -8,7 +8,7 @@ surface_gravity: 1.313
 
 radius: 1562.0e+3
 
-eccentricity: 0.0094
+eccentricity: 0.01
 
 love_h_elastic: 1.15106
 love_e_elastic: 0.308014

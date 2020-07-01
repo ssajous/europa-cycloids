@@ -20,8 +20,8 @@
     viscosity:
         - 0
         - 0
-        - 1e13
-        - 0
+        - 1e14
+        - 1e21
 
     mass: 1.898e27
     semiMajorDistance: 6.711e8
