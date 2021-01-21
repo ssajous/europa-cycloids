@@ -502,10 +502,10 @@ def match_stresses(batch, params, interior, save_stress_field=False, path='./out
     field = tools.get_simon_stress_field(
         interior,
         test_data,
-        phase=phase,
+        phase_degrees=phase,
         eccentricity=0.01,
-        obliquity=np.radians(obliquity),
-        nsr=0,
+        obliquity_radians=np.radians(obliquity),
+        nsr_radians=0,
         is_async=True,
         steps=360)
 
