@@ -193,7 +193,7 @@ def load_cilicia(points):
     ]
 
     # ciliciaCurve = fitting.createCycloidBezier(cilicia_arcs, maxError=0.015)
-    cilicia_curve = fitting.create_cycloid_bezier(cilicia_arcs, max_error=0.06, points_per_curve=points)
+    cilicia_curve = fitting.create_cycloid_bezier(cilicia_arcs, max_error=0.623, points_per_curve=points)
 
     return cilicia, cilicia_curve, cilicia_arcs
 
@@ -215,4 +215,5 @@ def load_all_cycloids_raw(points_per_curve=100):
     return cycloids
 
 
-load_all_cycloids = mem.cache(load_all_cycloids_raw)
+# load_all_cycloids = mem.cache(load_all_cycloids_raw)
+load_all_cycloids = load_all_cycloids_raw
