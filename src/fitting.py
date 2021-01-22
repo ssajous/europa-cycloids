@@ -711,6 +711,9 @@ def find_best_parameters_from_frame(optimize_history):
 
     # find param values
     best_fits = df.loc[df['loss'] <= threshold]
+    if len(best_fits < 2):
+        best_fits = optimize_history.sort_values('loss').head(5)
+
     param_hist = np.histogram2d(best_fits['phase'], best_fits['obliquity'], bins=50, density=True)
     index = np.unravel_index(np.argmax(param_hist[0]), param_hist[0].shape)
     phase = np.average(param_hist[1][index[0]:index[0] + 2])
