@@ -79,19 +79,19 @@ def load_sidon(points):
     sidon = pd.read_csv("./obsData/SidonLonLatAT.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     sidon_arcs = [
-        sidon[0:7],
-        sidon[6:19],
-        sidon[18:29],
-        sidon[28:39],
-        sidon[38:47],
-        sidon[46:54],
-        sidon[53:60],
-        sidon[59:66],
-        sidon[65:]
+        sidon[0:8],
+        sidon[7:19],
+        sidon[18:30],
+        sidon[29:40],
+        sidon[39:48],
+        sidon[47:55],
+        sidon[54:61],
+        sidon[60:67],
+        sidon[66:]
     ]
 
     # sidonCurve = fitting.createCycloidBezier(sidon_arcs, maxError=0.012) # Smoothing the last arc wiggle
-    sidon_curve = fitting.create_cycloid_bezier(sidon_arcs, max_error=0.065, points_per_curve=points)
+    sidon_curve = fitting.create_cycloid_bezier(sidon_arcs, max_error=0.08, points_per_curve=points)
 
     return sidon, sidon_curve, sidon_arcs
 
