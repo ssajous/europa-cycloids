@@ -134,10 +134,10 @@ def load_yaphet(points):
     yaphet = pd.read_csv("./obsData/YaphetLonLat.txt", header=None, sep=' ', names=['lon', 'lat'])
 
     yaphet_arcs = [
-        yaphet[0:12],
-        yaphet[11:23],
-        yaphet[22:32],
-        yaphet[31:]
+        yaphet[0:13],
+        yaphet[12:24],
+        yaphet[23:33],
+        yaphet[32:]
     ]
 
     yaphet_curve = fitting.create_cycloid_bezier(yaphet_arcs, max_error=0.12, points_per_curve=points)
