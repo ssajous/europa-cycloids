@@ -148,10 +148,10 @@ def load_odessa(points):
     odessa = pd.read_csv("./obsData/OdessaLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     odessa_arcs = [
-        odessa[0:10],
-        odessa[9:16],
-        odessa[15:23],
-        odessa[22:]
+        odessa[0:11],
+        odessa[10:17],
+        odessa[16:24],
+        odessa[23:]
     ]
 
     odessa_curve = fitting.create_cycloid_bezier(odessa_arcs, max_error=0.055, points_per_curve=points)
