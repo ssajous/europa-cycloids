@@ -45,13 +45,12 @@ def load_tyrrel(points):
         tyrrel[0:13],
         tyrrel[12:24],
         tyrrel[23:34],
-        tyrrel[33:44],
-        tyrrel[43:54],
-        tyrrel[53:67],
-        tyrrel[66:74],
-        tyrrel[73:83],
-        tyrrel[82:94],
-        tyrrel[93:]
+        tyrrel[33:45],
+        tyrrel[44:55],
+        tyrrel[54:68],
+        tyrrel[67:83],
+        tyrrel[82:95],
+        tyrrel[94:]
     ]
 
     tyrrel_curve = fitting.create_cycloid_bezier(tyrrel_arcs, max_error=0.09, points_per_curve=points)
@@ -108,7 +107,7 @@ def load_carly(points):
     ]
 
     # carlyCurve = fitting.createCycloidBezier(carly_arcs, maxError=0.0085)
-    carly_curve = fitting.create_cycloid_bezier(carly_arcs, max_error=0.035, points_per_curve=points)
+    carly_curve = fitting.create_cycloid_bezier(carly_arcs, max_error=0.076, points_per_curve=points)
 
     return carly, carly_curve, carly_arcs
 
