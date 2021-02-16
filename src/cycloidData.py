@@ -165,11 +165,11 @@ def load_mira(points):
     mira = pd.read_csv("./obsData/MiraLonLatP180.txt", header=None, sep='\t', names=['lon', 'lat'])
 
     mira_arcs = [
-        mira[0:11],
-        mira[10:18],
-        mira[17:21],
-        mira[20:31],
-        mira[30:]
+        mira[0:12],
+        mira[11:19],
+        mira[18:23],
+        mira[22:32],
+        mira[31:]
     ]
 
     mira_curve = fitting.create_cycloid_bezier(mira_arcs, max_error=0.107, points_per_curve=points)
