@@ -17,3 +17,5 @@ performance.log
 
 src/output/
 perf.log
+
+venv/
