@@ -6,6 +6,7 @@ import curves.bezier as bezier
 import utils
 from scipy import stats
 import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 
 
 def find_heading(points: pd.DataFrame, reverse: bool = False) -> np.array:
@@ -722,7 +723,46 @@ def find_best_parameters_from_frame(optimize_history):
     return phase, obliquity
 
 
-def find_best_parameters(optimize_output):
-    df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity'])
+def find_best_parameters_from_frame_new(optimize_history, include_longitude=False):
+    param_list = ['phase', 'obliquity', 'longitude'] if include_longitude else ['phase', 'obliquity']
 
-    return find_best_parameters_from_frame(df)
+    # Filter by low loss
+    threshold = optimize_history['loss'].quantile(0.10)
+    best_fits = optimize_history.loc[optimize_history['loss'] <= threshold]
+    num_fits = len(best_fits)
+
+    if num_fits <= 5:
+        best_fits = optimize_history.sort_values('loss').head(5)
+
+    # Find cluster count
+    if num_fits < 20:
+        num_clusters = 2
+    else:
+        num_clusters = num_fits // 10
+
+    # Applying K-Means clustering
+    clusters = KMeans(n_clusters=num_clusters, n_init='auto').fit(best_fits[param_list])
+
+    # Finding the cluster with the highest frequency
+    labels, counts = np.unique(clusters.labels_, return_counts=True)
+    most_common_cluster = labels[np.argmax(counts)]
+
+    # Calculating the centroid of the most common cluster
+    if include_longitude:
+        phase, obliquity, longitude = clusters.cluster_centers_[most_common_cluster]
+        return phase, obliquity, longitude
+    else:
+        phase, obliquity = clusters.cluster_centers_[most_common_cluster]
+        return phase, obliquity
+
+
+def find_best_parameters(optimize_output):
+    shape = optimize_output[3].shape
+    if shape[1] == 3:
+        df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity'])
+        include_longitude = False
+    else:
+        df = pd.DataFrame(optimize_output[3], columns=['loss', 'phase', 'obliquity', 'longitude'])
+        include_longitude = True
+
+    return find_best_parameters_from_frame_new(df, include_longitude)
